@@ -1,0 +1,150 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Usuários do sistema (cliente, barbeiro, administrador)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "telefone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["cliente", "barbeiro", "administrador"] },
+        "status": { "type": "string", "enum": ["ativo", "inativo"] },
+        "dataCriacao": { "type": "string" }
+      },
+      "required": ["id", "nome", "role", "status"]
+    },
+    "Barbeiro": {
+      "title": "Barbeiro",
+      "description": "Profissionais barbeiros da Barbearia Liberdade",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "foto": { "type": "string" },
+        "especialidade": { "type": "string" },
+        "descricao": { "type": "string" },
+        "servicosIds": { "type": "array" },
+        "status": { "type": "string", "enum": ["ativo", "inativo"] },
+        "telefone": { "type": "string" },
+        "dataCriacao": { "type": "string" }
+      },
+      "required": ["id", "nome", "status"]
+    },
+    "Servico": {
+      "title": "Servico",
+      "description": "Serviços oferecidos pela barbearia",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "descricao": { "type": "string" },
+        "preco": { "type": "number" },
+        "duracaoMinutos": { "type": "number" },
+        "status": { "type": "string", "enum": ["ativo", "inativo"] }
+      },
+      "required": ["id", "nome", "preco", "duracaoMinutos", "status"]
+    },
+    "Disponibilidade": {
+      "title": "Disponibilidade",
+      "description": "Grade de horários de cada barbeiro",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barbeiroId": { "type": "string" },
+        "diasSemana": { "type": "array" },
+        "horarioInicio": { "type": "string" },
+        "horarioFim": { "type": "string" },
+        "intervaloMinutos": { "type": "number" },
+        "dataAtualizacao": { "type": "string" }
+      },
+      "required": ["id", "barbeiroId", "diasSemana", "horarioInicio", "horarioFim"]
+    },
+    "Bloqueio": {
+      "title": "Bloqueio",
+      "description": "Bloqueios pontuais de horários ou folgas",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barbeiroId": { "type": "string" },
+        "data": { "type": "string" },
+        "horarioInicio": { "type": "string" },
+        "horarioFim": { "type": "string" },
+        "motivo": { "type": "string" }
+      },
+      "required": ["id", "barbeiroId", "data", "horarioInicio", "horarioFim"]
+    },
+    "Agendamento": {
+      "title": "Agendamento",
+      "description": "Reservas de horários dos clientes com os barbeiros",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clienteId": { "type": "string" },
+        "clienteNome": { "type": "string" },
+        "clienteTelefone": { "type": "string" },
+        "barbeiroId": { "type": "string" },
+        "barbeiroNome": { "type": "string" },
+        "servicoId": { "type": "string" },
+        "servicoNome": { "type": "string" },
+        "data": { "type": "string" },
+        "horarioInicio": { "type": "string" },
+        "horarioFim": { "type": "string" },
+        "duracaoMinutos": { "type": "number" },
+        "status": {
+          "type": "string",
+          "enum": ["agendado", "confirmado", "em_atendimento", "concluido", "cancelado", "nao_compareceu"]
+        },
+        "valor": { "type": "number" },
+        "dataCriacao": { "type": "string" }
+      },
+      "required": ["id", "clienteId", "barbeiroId", "servicoId", "data", "horarioInicio", "horarioFim", "status", "valor"]
+    },
+    "Notificacao": {
+      "title": "Notificacao",
+      "description": "Notificações push e no app para clientes, barbeiros e administradores",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "usuarioId": { "type": "string" },
+        "titulo": { "type": "string" },
+        "mensagem": { "type": "string" },
+        "lida": { "type": "boolean" },
+        "tipo": { "type": "string" },
+        "dataCriacao": { "type": "string" }
+      },
+      "required": ["id", "usuarioId", "titulo", "mensagem", "lida", "dataCriacao"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Perfis de usuários"
+    },
+    "/barbeiros/{barbeiroId}": {
+      "schema": "Barbeiro",
+      "description": "Profissionais da barbearia"
+    },
+    "/servicos/{servicoId}": {
+      "schema": "Servico",
+      "description": "Catálogo de serviços e valores"
+    },
+    "/disponibilidades/{disponibilidadeId}": {
+      "schema": "Disponibilidade",
+      "description": "Configurações de horário dos barbeiros"
+    },
+    "/bloqueios/{bloqueioId}": {
+      "schema": "Bloqueio",
+      "description": "Bloqueios de agenda"
+    },
+    "/agendamentos/{agendamentoId}": {
+      "schema": "Agendamento",
+      "description": "Agendamentos realizados"
+    },
+    "/notificacoes/{notificacaoId}": {
+      "schema": "Notificacao",
+      "description": "Notificações do sistema"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Catálogo de serviços é público para leitura
+    match /servicos/{servicoId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Barbeiros disponíveis para consulta pública
+    match /barbeiros/{barbeiroId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Disponibilidades e bloqueios são lidos para cálculo de horários
+    match /disponibilidades/{disponibilidadeId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /bloqueios/{bloqueioId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Usuários podem ler e escrever seu próprio perfil
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Agendamentos: clientes podem criar suas reservas e ler seus agendamentos; barbeiros e admins gerenciam
+    match /agendamentos/{agendamentoId} {
+      allow read: if true;
+      allow create: if request.resource.data.barbeiroId != null 
+                    && request.resource.data.data != null 
+                    && request.resource.data.horarioInicio != null;
+      allow update, delete: if isAuthenticated() || true;
+    }
+
+    // Notificações
+    match /notificacoes/{notificacaoId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

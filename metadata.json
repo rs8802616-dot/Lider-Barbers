@@ -1,0 +1,6 @@
+{
+  "name": "Barbearia Liberdade",
+  "description": "Aplicativo moderno e responsivo para Barbearia Liberdade com agendamento online em tempo real, painel de barbeiros, gestão administrativa e suporte PWA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
