@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Crown, Bell, User, Scissors, ShieldAlert, Sparkles } from 'lucide-react';
+import { Crown, Bell, User, Scissors, ShieldAlert, Sparkles, Download, Lock } from 'lucide-react';
 import { UserRole, AppNotification } from '../../types';
 import { requestPushPermission, triggerBrowserNotification } from '../../services/notificationService';
 
@@ -8,6 +8,7 @@ interface HeaderProps {
   onRoleChange: (role: UserRole) => void;
   notifications: AppNotification[];
   onOpenNotifications: () => void;
+  onOpenInstall: () => void;
   activeUserName: string;
 }
 
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   onRoleChange,
   notifications,
   onOpenNotifications,
+  onOpenInstall,
   activeUserName,
 }) => {
   const unreadCount = notifications.filter((n) => !n.lida).length;
@@ -61,8 +63,19 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Controls: Persona Switcher & Push Notifications */}
+        {/* Controls: Install App, Push Notifications, Persona Switcher */}
         <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5 w-full md:w-auto">
+          {/* Baixar Aplicativo PWA */}
+          <button
+            type="button"
+            onClick={onOpenInstall}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37]/20 to-[#B38F2E]/20 text-[#D4AF37] border border-[#D4AF37]/40 hover:bg-[#D4AF37]/30 transition-all font-semibold shadow-sm"
+            title="Baixar e instalar o aplicativo Líder Barbers"
+          >
+            <Download className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span>Baixar App</span>
+          </button>
+
           {/* Real Push Notification Toggle / Bell */}
           <div className="flex items-center gap-1">
             {pushStatus !== 'granted' && (
@@ -92,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Role Persona Switcher (PRD Profiles: Cliente, Barbeiro, Administrador) */}
+          {/* Role Persona Switcher (Segurança & Separação por Perfil) */}
           <div className="flex items-center bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 text-xs">
             <button
               type="button"
@@ -118,6 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Scissors className="w-3.5 h-3.5" />
               <span>Barbeiro</span>
+              {currentRole !== 'barbeiro' && <Lock className="w-2.5 h-2.5 opacity-60 ml-0.5" />}
             </button>
 
             <button
@@ -131,6 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               <span>Admin</span>
+              {currentRole !== 'administrador' && <Lock className="w-2.5 h-2.5 opacity-60 ml-0.5" />}
             </button>
           </div>
         </div>

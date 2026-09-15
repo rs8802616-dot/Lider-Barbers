@@ -18,6 +18,8 @@ import {
 import { Header } from './components/common/Header';
 import { FooterFeatures } from './components/common/FooterFeatures';
 import { NotificationModal } from './components/common/NotificationModal';
+import { AuthModal } from './components/common/AuthModal';
+import { InstallPwaModal } from './components/common/InstallPwaModal';
 import { ClientModule } from './components/client/ClientModule';
 import { BarberModule } from './components/barber/BarberModule';
 import { AdminModule } from './components/admin/AdminModule';
@@ -30,6 +32,22 @@ import {
 export default function App() {
   // Active role: 'cliente' | 'barbeiro' | 'administrador'
   const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
+
+  // Authenticated roles tracker to ensure clientes cannot leak into barber or admin views
+  const [unlockedRoles, setUnlockedRoles] = useState<{ barbeiro: boolean; administrador: boolean }>({
+    barbeiro: false,
+    administrador: false,
+  });
+  const [authModalState, setAuthModalState] = useState<{
+    isOpen: boolean;
+    targetRole: 'barbeiro' | 'administrador';
+  }>({
+    isOpen: false,
+    targetRole: 'barbeiro',
+  });
+
+  // PWA Install Modal state
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
 
   // Notifications modal
   const [isNotifModalOpen, setIsNotifModalOpen] = useState<boolean>(false);
@@ -124,14 +142,43 @@ export default function App() {
     // onSnapshot automatically synchronizes, but we can trigger state updates if needed
   }, []);
 
+  const handleRoleChangeAttempt = (role: UserRole) => {
+    if (role === 'cliente') {
+      setCurrentRole('cliente');
+      return;
+    }
+
+    // If attempting to switch to barber or admin, verify if already authenticated
+    if (role === 'barbeiro') {
+      if (unlockedRoles.barbeiro) {
+        setCurrentRole('barbeiro');
+      } else {
+        setAuthModalState({ isOpen: true, targetRole: 'barbeiro' });
+      }
+    } else if (role === 'administrador') {
+      if (unlockedRoles.administrador) {
+        setCurrentRole('administrador');
+      } else {
+        setAuthModalState({ isOpen: true, targetRole: 'administrador' });
+      }
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    const target = authModalState.targetRole;
+    setUnlockedRoles((prev) => ({ ...prev, [target]: true }));
+    setCurrentRole(target);
+  };
+
   return (
     <div className="min-h-screen bg-[#0D0D0F] text-zinc-100 flex flex-col selection:bg-[#D4AF37] selection:text-zinc-950 font-sans">
       {/* Top Bar with Role Switcher & Controls */}
       <Header
         currentRole={currentRole}
-        onRoleChange={setCurrentRole}
+        onRoleChange={handleRoleChangeAttempt}
         notifications={notifications}
         onOpenNotifications={() => setIsNotifModalOpen(true)}
+        onOpenInstall={() => setIsInstallModalOpen(true)}
         activeUserName={
           currentRole === 'cliente'
             ? clientUser.nome
@@ -184,6 +231,20 @@ export default function App() {
         onClose={() => setIsNotifModalOpen(false)}
         notifications={notifications}
         currentUserId={activeUserId}
+      />
+
+      {/* Security Auth Modal for Restricting Barber & Admin Access */}
+      <AuthModal
+        isOpen={authModalState.isOpen}
+        onClose={() => setAuthModalState((prev) => ({ ...prev, isOpen: false }))}
+        targetRole={authModalState.targetRole}
+        onSuccess={handleAuthSuccess}
+      />
+
+      {/* PWA Install Modal */}
+      <InstallPwaModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
       />
     </div>
   );
