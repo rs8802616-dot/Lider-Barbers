@@ -43,12 +43,15 @@ export interface UserProfile {
 export interface Barbeiro {
   id: string;
   nome: string;
+  slug?: string;
   foto: string;
   especialidade: string;
   descricao: string;
   servicosIds: string[];
   status: 'ativo' | 'inativo';
   telefone: string;
+  email?: string;
+  isAdmin?: boolean; // Flag indicando se este barbeiro também é Administrador da barbearia
   avaliacao?: number;
   dataCriacao: string;
 }
