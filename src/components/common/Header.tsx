@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { Crown, Bell, Smartphone, Monitor, User, Scissors, ShieldAlert, Sparkles } from 'lucide-react';
+import { Crown, Bell, User, Scissors, ShieldAlert, Sparkles } from 'lucide-react';
 import { UserRole, AppNotification } from '../../types';
 import { requestPushPermission, triggerBrowserNotification } from '../../services/notificationService';
 
 interface HeaderProps {
   currentRole: UserRole;
   onRoleChange: (role: UserRole) => void;
-  isMobileDeviceView: boolean;
-  onToggleDeviceView: () => void;
   notifications: AppNotification[];
   onOpenNotifications: () => void;
   activeUserName: string;
@@ -16,8 +14,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   currentRole,
   onRoleChange,
-  isMobileDeviceView,
-  onToggleDeviceView,
   notifications,
   onOpenNotifications,
   activeUserName,
@@ -65,32 +61,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Controls: Persona Switcher, Push Bell, Device Mockup Toggle */}
-        <div className="flex flex-wrap items-center justify-center gap-2 w-full md:w-auto">
-          {/* Device Mockup Toggle */}
-          <button
-            type="button"
-            onClick={onToggleDeviceView}
-            title={isMobileDeviceView ? 'Alternar para visão desktop completa' : 'Alternar para visual smartphone (mockup)'}
-            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-all border ${
-              isMobileDeviceView
-                ? 'bg-zinc-800 text-[#D4AF37] border-[#D4AF37]/40'
-                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-zinc-200'
-            }`}
-          >
-            {isMobileDeviceView ? (
-              <>
-                <Smartphone className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span className="hidden sm:inline">Modo Celular</span>
-              </>
-            ) : (
-              <>
-                <Monitor className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Modo Amplo</span>
-              </>
-            )}
-          </button>
-
+        {/* Controls: Persona Switcher & Push Notifications */}
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5 w-full md:w-auto">
           {/* Real Push Notification Toggle / Bell */}
           <div className="flex items-center gap-1">
             {pushStatus !== 'granted' && (

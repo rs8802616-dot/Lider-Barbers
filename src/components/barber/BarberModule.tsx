@@ -301,7 +301,7 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
           </div>
 
           {/* Agenda Appointments List */}
-          <div className="space-y-2.5">
+          <div>
             {dailyAppointments.length === 0 ? (
               <div className="py-12 text-center text-zinc-500 text-xs bg-[#18181b] rounded-2xl border border-zinc-800">
                 <Clock className="w-8 h-8 mx-auto mb-2 opacity-30 text-[#D4AF37]" />
@@ -311,56 +311,58 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
                 </p>
               </div>
             ) : (
-              dailyAppointments.map((ag) => {
-                const isConfirmed = ag.status === 'confirmado';
-                const isInService = ag.status === 'em_atendimento';
-                const isScheduled = ag.status === 'agendado';
-                const isCompleted = ag.status === 'concluido';
-                const isCancelled = ag.status === 'cancelado';
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {dailyAppointments.map((ag) => {
+                  const isConfirmed = ag.status === 'confirmado';
+                  const isInService = ag.status === 'em_atendimento';
+                  const isScheduled = ag.status === 'agendado';
+                  const isCompleted = ag.status === 'concluido';
+                  const isCancelled = ag.status === 'cancelado';
 
-                return (
-                  <div
-                    key={ag.id}
-                    onClick={() => setSelectedAgendamento(ag)}
-                    className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-[#D4AF37]/50 transition-all cursor-pointer flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-center min-w-[70px] py-1 px-2 rounded-lg bg-zinc-900 border border-zinc-800">
-                        <span className="text-xs font-bold text-zinc-100">
-                          {ag.horarioInicio}
-                        </span>
-                        <span className="block text-[10px] text-zinc-500">
-                          {ag.horarioFim}
-                        </span>
-                      </div>
-
-                      <div>
-                        <h4 className="text-xs font-bold text-zinc-100">{ag.clienteNome}</h4>
-                        <p className="text-[11px] text-zinc-400">{ag.servicoNome}</p>
-                      </div>
-                    </div>
-
-                    {/* Badge as in Mockup */}
-                    <span
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                        isConfirmed
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
-                          : isInService
-                          ? 'bg-amber-950/80 text-amber-400 border border-amber-800/60'
-                          : isScheduled
-                          ? 'bg-blue-950/80 text-blue-400 border border-blue-800/60'
-                          : isCompleted
-                          ? 'bg-purple-950/80 text-purple-400 border border-purple-800/60'
-                          : isCancelled
-                          ? 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
-                          : 'bg-zinc-800 text-zinc-300'
-                      }`}
+                  return (
+                    <div
+                      key={ag.id}
+                      onClick={() => setSelectedAgendamento(ag)}
+                      className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-[#D4AF37]/50 transition-all cursor-pointer flex items-center justify-between gap-3"
                     >
-                      {ag.status === 'em_atendimento' ? 'Em atendimento' : ag.status}
-                    </span>
-                  </div>
-                );
-              })
+                      <div className="flex items-center gap-3">
+                        <div className="text-center min-w-[70px] py-1 px-2 rounded-lg bg-zinc-900 border border-zinc-800">
+                          <span className="text-xs font-bold text-zinc-100">
+                            {ag.horarioInicio}
+                          </span>
+                          <span className="block text-[10px] text-zinc-500">
+                            {ag.horarioFim}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-xs font-bold text-zinc-100">{ag.clienteNome}</h4>
+                          <p className="text-[11px] text-zinc-400">{ag.servicoNome}</p>
+                        </div>
+                      </div>
+
+                      {/* Badge as in Mockup */}
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                          isConfirmed
+                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
+                            : isInService
+                            ? 'bg-amber-950/80 text-amber-400 border border-amber-800/60'
+                            : isScheduled
+                            ? 'bg-blue-950/80 text-blue-400 border border-blue-800/60'
+                            : isCompleted
+                            ? 'bg-purple-950/80 text-purple-400 border border-purple-800/60'
+                            : isCancelled
+                            ? 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
+                            : 'bg-zinc-800 text-zinc-300'
+                        }`}
+                      >
+                        {ag.status === 'em_atendimento' ? 'Em atendimento' : ag.status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
@@ -376,42 +378,44 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
             <span className="text-xs text-zinc-400">Total: {clientsList.length}</span>
           </div>
 
-          <div className="space-y-2.5">
+          <div>
             {clientsList.length === 0 ? (
               <div className="py-12 text-center text-zinc-500 text-xs bg-[#18181b] rounded-2xl border border-zinc-800">
                 <Users className="w-8 h-8 mx-auto mb-2 opacity-30 text-[#D4AF37]" />
                 <p>Nenhum cliente agendado ainda.</p>
               </div>
             ) : (
-              clientsList.map((cli, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-xs text-[#D4AF37]">
-                      {cli.nome.charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-zinc-100">{cli.nome}</h4>
-                      <p className="text-[11px] text-zinc-400">{cli.telefone}</p>
-                      <p className="text-[10px] text-zinc-500">
-                        Último serviço: {cli.lastService} ({cli.total}x)
-                      </p>
-                    </div>
-                  </div>
-
-                  <a
-                    href={`https://wa.me/55${cli.telefone.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
-                    title="Conversar no WhatsApp"
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {clientsList.map((cli, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 flex items-center justify-between"
                   >
-                    <MessageSquare className="w-4 h-4" />
-                  </a>
-                </div>
-              ))
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-xs text-[#D4AF37]">
+                        {cli.nome.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-zinc-100">{cli.nome}</h4>
+                        <p className="text-[11px] text-zinc-400">{cli.telefone}</p>
+                        <p className="text-[10px] text-zinc-500">
+                          Último serviço: {cli.lastService} ({cli.total}x)
+                        </p>
+                      </div>
+                    </div>
+
+                    <a
+                      href={`https://wa.me/55${cli.telefone.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                      title="Conversar no WhatsApp"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </a>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -429,107 +433,109 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
             </p>
           </div>
 
-          {/* Dias de trabalho */}
-          <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-3">
-            <h4 className="text-xs font-bold text-zinc-300 font-display">
-              Dias de trabalho
-            </h4>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Dias de trabalho */}
+            <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-3">
+              <h4 className="text-xs font-bold text-zinc-300 font-display">
+                Dias de trabalho
+              </h4>
 
-            <div className="space-y-2">
-              {[1, 2, 3, 4, 5, 6, 0].map((dayIdx) => {
-                const isActive = workingDays.includes(dayIdx);
-                return (
-                  <div
-                    key={dayIdx}
-                    onClick={() => toggleDay(dayIdx)}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 cursor-pointer hover:border-zinc-700 transition-colors"
-                  >
-                    <span className="text-xs text-zinc-200 font-medium">
-                      {dayNames[dayIdx]}
-                    </span>
-
-                    <button
-                      type="button"
-                      className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
-                        isActive ? 'bg-emerald-500' : 'bg-zinc-700'
-                      }`}
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5, 6, 0].map((dayIdx) => {
+                  const isActive = workingDays.includes(dayIdx);
+                  return (
+                    <div
+                      key={dayIdx}
+                      onClick={() => toggleDay(dayIdx)}
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 cursor-pointer hover:border-zinc-700 transition-colors"
                     >
-                      <div
-                        className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                          isActive ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                      <span className="text-xs text-zinc-200 font-medium">
+                        {dayNames[dayIdx]}
+                      </span>
 
-          {/* Horário de atendimento & Intervalo */}
-          <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-3.5 text-xs">
-            <div>
-              <label className="block text-zinc-300 font-semibold mb-1.5">
-                Horário de atendimento
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-[10px] text-zinc-500 block mb-1">Início</span>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 font-mono text-xs focus:border-[#D4AF37] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <span className="text-[10px] text-zinc-500 block mb-1">Término</span>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 font-mono text-xs focus:border-[#D4AF37] focus:outline-none"
-                  />
-                </div>
+                      <button
+                        type="button"
+                        className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
+                          isActive ? 'bg-emerald-500' : 'bg-zinc-700'
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                            isActive ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            <div>
-              <label className="block text-zinc-300 font-semibold mb-1.5">
-                Intervalo entre atendimentos
-              </label>
-              <select
-                value={intervalMinutes}
-                onChange={(e) => setIntervalMinutes(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 text-xs focus:border-[#D4AF37] focus:outline-none"
+            {/* Horário de atendimento & Intervalo */}
+            <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-4 text-xs">
+              <div>
+                <label className="block text-zinc-300 font-semibold mb-1.5">
+                  Horário de atendimento
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[10px] text-zinc-500 block mb-1">Início</span>
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 font-mono text-xs focus:border-[#D4AF37] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-zinc-500 block mb-1">Término</span>
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 font-mono text-xs focus:border-[#D4AF37] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-300 font-semibold mb-1.5">
+                  Intervalo entre atendimentos
+                </label>
+                <select
+                  value={intervalMinutes}
+                  onChange={(e) => setIntervalMinutes(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 text-xs focus:border-[#D4AF37] focus:outline-none"
+                >
+                  <option value={0}>Sem intervalo (0 minutos)</option>
+                  <option value={5}>5 minutos</option>
+                  <option value={10}>10 minutos (padrão)</option>
+                  <option value={15}>15 minutos</option>
+                  <option value={20}>20 minutos</option>
+                </select>
+              </div>
+
+              {/* Save Button */}
+              <button
+                type="button"
+                onClick={handleSaveDisponibilidade}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.99] transition-all shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center gap-2 mt-4"
               >
-                <option value={0}>Sem intervalo (0 minutos)</option>
-                <option value={5}>5 minutos</option>
-                <option value={10}>10 minutos (padrão)</option>
-                <option value={15}>15 minutos</option>
-                <option value={20}>20 minutos</option>
-              </select>
+                {saveSuccess ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Alterações Salvas com Sucesso!</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Salvar alterações</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
-
-          {/* Save Button */}
-          <button
-            type="button"
-            onClick={handleSaveDisponibilidade}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.99] transition-all shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center gap-2"
-          >
-            {saveSuccess ? (
-              <>
-                <Check className="w-4 h-4" />
-                <span>Alterações Salvas com Sucesso!</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Salvar alterações</span>
-              </>
-            )}
-          </button>
         </div>
       )}
 

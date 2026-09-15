@@ -26,14 +26,10 @@ import {
   subscribeNotifications,
   triggerBrowserNotification,
 } from './services/notificationService';
-import { Wifi, Battery, Signal, Sparkles } from 'lucide-react';
 
 export default function App() {
   // Active role: 'cliente' | 'barbeiro' | 'administrador'
   const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
-
-  // Device view mode: mobile frame view (like in prototype screenshot) vs full desktop view
-  const [isMobileDeviceView, setIsMobileDeviceView] = useState<boolean>(true);
 
   // Notifications modal
   const [isNotifModalOpen, setIsNotifModalOpen] = useState<boolean>(false);
@@ -134,8 +130,6 @@ export default function App() {
       <Header
         currentRole={currentRole}
         onRoleChange={setCurrentRole}
-        isMobileDeviceView={isMobileDeviceView}
-        onToggleDeviceView={() => setIsMobileDeviceView(!isMobileDeviceView)}
         notifications={notifications}
         onOpenNotifications={() => setIsNotifModalOpen(true)}
         activeUserName={
@@ -147,87 +141,38 @@ export default function App() {
         }
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 lg:p-6 w-full">
-        {isMobileDeviceView ? (
-          /* Sleek Mobile Frame (Matches the prototype mockups from the image) */
-          <div className="w-full max-w-[420px] rounded-[44px] bg-[#121212] border-[8px] border-[#222227] shadow-2xl shadow-black/80 overflow-hidden relative transition-all ring-1 ring-zinc-800">
-            {/* Mobile Status Bar (9:41, icons) */}
-            <div className="h-10 bg-[#121212] px-6 flex items-center justify-between text-[12px] font-semibold text-zinc-400 select-none border-b border-zinc-900/60">
-              <span>9:41</span>
-              <div className="w-24 h-4 bg-zinc-950 rounded-full mx-auto" />
-              <div className="flex items-center gap-1.5 text-zinc-300">
-                <Signal className="w-3.5 h-3.5" />
-                <Wifi className="w-3.5 h-3.5" />
-                <Battery className="w-4 h-4" />
-              </div>
-            </div>
+      {/* Main Content Area - Expansive website layout (100% full bleed on mobile, max-w-7xl on desktop) */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-6">
+        <div className="w-full bg-[#141417] sm:rounded-2xl border-y sm:border border-zinc-800/80 p-3 sm:p-6 lg:p-8 sm:shadow-2xl">
+          {currentRole === 'cliente' && (
+            <ClientModule
+              currentUser={clientUser}
+              barbeiros={barbeiros}
+              servicos={servicos}
+              agendamentos={agendamentos}
+              onRefreshData={handleRefresh}
+            />
+          )}
 
-            {/* Inner Content Scroll Container */}
-            <div className="p-4 sm:p-5 max-h-[82vh] overflow-y-auto">
-              {currentRole === 'cliente' && (
-                <ClientModule
-                  currentUser={clientUser}
-                  barbeiros={barbeiros}
-                  servicos={servicos}
-                  agendamentos={agendamentos}
-                  onRefreshData={handleRefresh}
-                />
-              )}
+          {currentRole === 'barbeiro' && (
+            <BarberModule
+              currentBarber={barberUser}
+              agendamentos={agendamentos}
+              servicos={servicos}
+              disponibilidade={disponibilidades.find((d) => d.barbeiroId === barberUser.id)}
+              onRefreshData={handleRefresh}
+            />
+          )}
 
-              {currentRole === 'barbeiro' && (
-                <BarberModule
-                  currentBarber={barberUser}
-                  agendamentos={agendamentos}
-                  servicos={servicos}
-                  disponibilidade={disponibilidades.find((d) => d.barbeiroId === barberUser.id)}
-                  onRefreshData={handleRefresh}
-                />
-              )}
-
-              {currentRole === 'administrador' && (
-                <AdminModule
-                  barbeiros={barbeiros}
-                  servicos={servicos}
-                  agendamentos={agendamentos}
-                  onRefreshData={handleRefresh}
-                />
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Full Desktop View */
-          <div className="w-full max-w-6xl mx-auto rounded-2xl bg-[#141417] border border-zinc-800/80 p-6 shadow-xl">
-            {currentRole === 'cliente' && (
-              <ClientModule
-                currentUser={clientUser}
-                barbeiros={barbeiros}
-                servicos={servicos}
-                agendamentos={agendamentos}
-                onRefreshData={handleRefresh}
-              />
-            )}
-
-            {currentRole === 'barbeiro' && (
-              <BarberModule
-                currentBarber={barberUser}
-                agendamentos={agendamentos}
-                servicos={servicos}
-                disponibilidade={disponibilidades.find((d) => d.barbeiroId === barberUser.id)}
-                onRefreshData={handleRefresh}
-              />
-            )}
-
-            {currentRole === 'administrador' && (
-              <AdminModule
-                barbeiros={barbeiros}
-                servicos={servicos}
-                agendamentos={agendamentos}
-                onRefreshData={handleRefresh}
-              />
-            )}
-          </div>
-        )}
+          {currentRole === 'administrador' && (
+            <AdminModule
+              barbeiros={barbeiros}
+              servicos={servicos}
+              agendamentos={agendamentos}
+              onRefreshData={handleRefresh}
+            />
+          )}
+        </div>
       </main>
 
       {/* Golden Brand Features Footer as seen in image */}

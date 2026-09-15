@@ -354,7 +354,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
           </div>
 
           {/* Barbers list as in mockup */}
-          <div className="space-y-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {barbeiros.map((barb) => {
               const isActive = barb.status === 'ativo';
               return (
@@ -416,7 +416,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
           </div>
 
           {/* Service list with active toggles as in mockup */}
-          <div className="space-y-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {servicos.map((serv) => {
               const isActive = serv.status === 'ativo';
               return (
@@ -500,41 +500,43 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
           </div>
 
           {/* List */}
-          <div className="space-y-2.5">
+          <div>
             {filteredAppointments.length === 0 ? (
               <div className="py-12 text-center text-zinc-500 text-xs bg-[#18181b] rounded-2xl border border-zinc-800">
                 <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30 text-[#D4AF37]" />
                 <p>Nenhum agendamento com os filtros selecionados.</p>
               </div>
             ) : (
-              filteredAppointments.map((ag) => (
-                <div
-                  key={ag.id}
-                  className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 flex items-center justify-between"
-                >
-                  <div>
-                    <h4 className="text-xs font-bold text-zinc-100">{ag.clienteNome}</h4>
-                    <p className="text-[11px] text-zinc-400">
-                      {ag.servicoNome} com <span className="text-[#C5A059]">{ag.barbeiroNome}</span>
-                    </p>
-                    <p className="text-[10px] text-zinc-500">
-                      {ag.data} • {ag.horarioInicio} às {ag.horarioFim} • R$ {ag.valor.toFixed(2).replace('.', ',')}
-                    </p>
-                  </div>
-
-                  <span
-                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
-                      ag.status === 'confirmado'
-                        ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
-                        : ag.status === 'cancelado'
-                        ? 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
-                        : 'bg-blue-950/80 text-blue-400 border border-blue-800/60'
-                    }`}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filteredAppointments.map((ag) => (
+                  <div
+                    key={ag.id}
+                    className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 flex items-center justify-between"
                   >
-                    {ag.status}
-                  </span>
-                </div>
-              ))
+                    <div>
+                      <h4 className="text-xs font-bold text-zinc-100">{ag.clienteNome}</h4>
+                      <p className="text-[11px] text-zinc-400">
+                        {ag.servicoNome} com <span className="text-[#C5A059]">{ag.barbeiroNome}</span>
+                      </p>
+                      <p className="text-[10px] text-zinc-500">
+                        {ag.data} • {ag.horarioInicio} às {ag.horarioFim} • R$ {ag.valor.toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+
+                    <span
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
+                        ag.status === 'confirmado'
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
+                          : ag.status === 'cancelado'
+                          ? 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
+                          : 'bg-blue-950/80 text-blue-400 border border-blue-800/60'
+                      }`}
+                    >
+                      {ag.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -550,7 +552,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
             <p className="text-xs text-zinc-400">Preferências do estabelecimento</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
               { title: 'Horário de funcionamento', desc: 'Segunda a Sábado, das 08:00 às 18:00' },
               { title: 'Regras de cancelamento', desc: 'Cancelamento gratuito até 2h antes' },

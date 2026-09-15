@@ -8,7 +8,7 @@ import {
   setDoc,
   writeBatch
 } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 import firebaseConfigJson from '../../firebase-applet-config.json';
 import { Barbeiro, Servico, Disponibilidade, Agendamento } from '../types';
 
@@ -24,6 +24,16 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfigJson.firestoreDatabaseId || undefined);
 export const auth = getAuth(app);
+
+export async function ensureAnonymousAuth() {
+  try {
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+  } catch {
+    // If anonymous auth is disabled on the project, proceed gracefully with public rules
+  }
+}
 
 // Seed data based on the PRD and mockup screenshot
 export const DEFAULT_SERVICOS: Servico[] = [
@@ -115,6 +125,7 @@ export const DEFAULT_BARBEIROS: Barbeiro[] = [
 
 export async function testConnection() {
   try {
+    await ensureAnonymousAuth();
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
@@ -125,6 +136,7 @@ export async function testConnection() {
 
 export async function seedInitialDataIfNeeded() {
   try {
+    await ensureAnonymousAuth();
     const servicosSnap = await getDocs(collection(db, 'servicos'));
     if (servicosSnap.empty) {
       console.log('Seeding initial servicos into Firestore...');
