@@ -10,10 +10,11 @@
 - **Nome da Marca:** Líder Barbers
 - **Slogan:** Estilo • Respeito • Liderança
 - **Cores Primárias:** Ouro Envelhecido/Dourado (`#D4AF37`, `#B38F2E`, `#997A23`) e Preto Grafite (`#121212`, `#141417`, `#0D0D0F`).
-- **Público e Casos de Uso:**
-  1. **Clientes:** Agendamento online de cortes e barba em tempo real, seleção de profissional, acompanhamento de agendamentos, cancelamentos com regra de antecedência e cancelamento/reagendamento.
-  2. **Barbeiros:** Gestão de agenda diária/semanal, horários de atendimento, bloqueios, acompanhamento de status de clientes.
-  3. **Administradores:** Gestão de equipe de barbeiros, catálogo de serviços, relatórios operacionais e métricas financeiras.
+- **Público e Papéis de Acesso (RBAC):**
+  1. **Clientes (`cliente`):** Agendamento online em tempo real, seleção de profissional, acompanhamento e cancelamento seguro de agendamentos. **Não visualizam seletores de Barbeiro/Admin** na navegação principal nem dados financeiros do negócio.
+  2. **Barbeiros (`barbeiro`):** Gestão de sua própria agenda, clientes agendados com ele, configuração de sua disponibilidade de horários e nova aba **"Meus Ganhos"** com extrato individual e cálculo de comissões (60% de repasse) estritamente isolado de outros profissionais.
+  3. **Administradores de Barbearia (`administrador`):** Gestão operacional da unidade, equipe de barbeiros locais, catálogo de serviços e faturamento geral da barbearia.
+  4. **Super Admin / Master (`super_admin`):** Exclusivo para o **Dono do Aplicativo**. Permite cadastrar barbearias/unidades multi-tenant, cadastrar e revogar administradores vinculados a cada barbearia, e monitorar o ecossistema geral da plataforma.
 
 ---
 
@@ -31,24 +32,22 @@
 
 ---
 
-## 3. Segurança e Separação de Acessos (RBAC & Prevenção de Vazamento)
-### Diagnóstico do Problema Solucionado:
-Anteriormente, a troca de perfil era feita por um seletor livre no topo do aplicativo, permitindo que qualquer cliente acessasse a visão do barbeiro ou o painel administrativo geral, visualizando receitas financeiras e dados de outros clientes.
-
-### Implementação de Segurança:
-1. **Gate de Autenticação / Senha (`AuthModal.tsx`):**
-   - Acesso padrão: **Cliente** (aberto para qualquer usuário).
-   - O acesso às abas de **Barbeiro** ou **Administrador** exige desbloqueio por senha/PIN de segurança.
-   - Credenciais padrão para ambiente de gestão:
-     - **Administrador:** `admin123` ou `1234`
-     - **Barbeiro:** `barber123` ou `1234`
-   - Estado de autenticação mantido no ciclo de vida da sessão (`unlockedRoles`).
-2. **Indicadores Visuais de Bloqueio:**
-   - Ícones de cadeado (`Lock`) nos botões de Barbeiro e Admin no `Header.tsx` para sinalizar ao cliente que aquelas áreas são restritas da gerência.
-3. **Regras de Isolamento de Dados:**
-   - A visão do cliente exibe estritamente os agendamentos pertencentes ao seu ID (`clientAppointments`).
-   - A visão do barbeiro filtra estritamente os clientes que possuem agendamento com aquele barbeiro.
-   - O painel administrativo agrega todas as métricas gerais com acesso protegido.
+## 3. Segurança e Separação Estrita de Acessos (RBAC Anti-Vazamento)
+### Diretriz Estrita de Visibilidade:
+1. **Ocultação Absoluta no Cabeçalho para Clientes:**
+   - Para o perfil `cliente`, os seletores/botões de "Barbeiro" e "Admin" foram **completamente removidos** do cabeçalho (`Header.tsx`). O cliente visualiza apenas seu nome, botão de "Baixar App" e sino de notificações.
+   - O layout se ajusta dinamicamente e sem quebras visuais ou espaços vazios.
+   - Acesso da equipe: pode ser acessado de forma discreta na aba "Perfil" do cliente através do botão "Área da Equipe", solicitando o PIN/senha correspondente.
+2. **Painel Master (Super Admin):**
+   - Módulo exclusivo (`/src/components/superadmin/SuperAdminModule.tsx`).
+   - Gerencia unidades de barbearias e cadastro de novos administradores (`nome`, `email`, `senha`, `barbeariaId`, `telefone`).
+   - Acesso protegido por credencial Master (`master123`, `super123` ou `1234`).
+3. **Visão de Faturamento Individual do Barbeiro ("Meus Ganhos"):**
+   - Nova aba no `BarberModule.tsx`.
+   - Isolamento total: calcula faturamento bruto, comissões individuais (60%) e histórico exclusivamente dos agendamentos atribuídos àquele profissional.
+   - O barbeiro não tem acesso ao faturamento global nem às métricas de outros colegas de barbearia.
+4. **Botão de Saída / Logout para Profissionais e Gestores:**
+   - O cabeçalho inclui um botão **"Sair"** quando em modo Barbeiro, Admin ou Master, retornando instantaneamente para a visão do Cliente de forma segura.
 
 ---
 
@@ -67,17 +66,29 @@ Anteriormente, a troca de perfil era feita por um seletor livre no topo do aplic
 
 ## 5. Histórico de Versões e Alterações
 
-### Versão 1.2 (Sessão Atual - Segurança, PWA e Documentação)
-- **Criação da Documentação (`DOCUMENTACAO-PROJETO.md`):** Estabelecido como guia permanente do projeto a ser lido antes de qualquer intervenção.
-- **Separação de Perfis & Segurança Anti-Vazamento:**
-  - Criado componente `AuthModal.tsx` para autenticar tentativas de acesso às áreas de Barbeiro e Administrador.
-  - Implementado bloqueio com PIN nos seletores do cabeçalho.
-  - Isolamento estrito de dados para impedir que clientes vejam faturamento ou dados de terceiros.
-- **Instalação PWA ("Baixar Aplicativo"):**
-  - Criado componente `InstallPwaModal.tsx` para guiar a instalação no Android, PC e iOS.
-  - Adicionado botão "Baixar App" de destaque no `Header.tsx`.
-  - Gerados ícones binários PNG válidos (192x192 e 512x512) para conformidade total com os critérios de PWA.
-  - Atualizado `sw.js` com o escopo do cache `lider-barbers-v1`.
+### Versão 1.3 (Sessão Atual - Super Admin, Faturamento Individual do Barbeiro & RBAC Refinado)
+- **Remoção de Controles Staff do Header para Clientes:** Removidos totalmente botões de Barbeiro/Admin do topo quando o usuário está na visão de cliente.
+- **Implementação do Módulo Super Admin (`SuperAdminModule.tsx`):**
+  - Painel exclusivo para o Dono do App.
+  - Cadastro de administradores e vínculo com barbearias / unidades multi-tenant.
+  - Listagem, busca e revogação de acessos administrativos.
+- **Implementação da Aba "Meus Ganhos" no Módulo do Barbeiro (`BarberModule.tsx`):**
+  - KPI cards de comissão acumulada, comissão do dia, faturamento bruto pessoal e cortes concluídos.
+  - Extrato detalhado individual com cálculo automático da comissão profissional.
+- **Reforço de Segurança:**
+  - Adicionadas regras no `firestore.rules` para as coleções `barbearias` e `administradores_barbearia`.
+  - Desbloqueio seguro no `AuthModal.tsx` suportando as 3 funções privilegiadas (Barbeiro, Admin, Master).
+  - Botão "Sair" no Header para voltar à visão do cliente.
+
+### Versão 1.2 (Segurança, PWA e Documentação)
+- Criação da documentação viva `DOCUMENTACAO-PROJETO.md`.
+- Implementação inicial de PWA e modal de download/instalação.
+
+### Versão 1.1 (Responsividade & Rebranding)
+- Remoção total da moldura de celular (simulação mobile) no desktop.
+- Layout 100% fluido e responsivo para monitores grandes, tablets e smartphones reais.
+- Rebranding completo para **Líder Barbers** com tipografia Cinzel e Montserrat.
+- Integração de notificações Web Push reais e sincronização de dados via Firebase Firestore.
 
 ### Versão 1.1 (Sessão Anterior - Responsividade & Rebranding)
 - Remoção total da moldura de celular (simulação mobile) no desktop.

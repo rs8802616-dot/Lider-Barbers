@@ -1,4 +1,4 @@
-export type UserRole = 'cliente' | 'barbeiro' | 'administrador';
+export type UserRole = 'cliente' | 'barbeiro' | 'administrador' | 'super_admin';
 
 export type AppointmentStatus =
   | 'agendado'
@@ -7,6 +7,27 @@ export type AppointmentStatus =
   | 'concluido'
   | 'cancelado'
   | 'nao_compareceu';
+
+export interface BarbeariaUnidade {
+  id: string;
+  nome: string;
+  cidade: string;
+  endereco?: string;
+  telefone?: string;
+  status: 'ativo' | 'inativo';
+}
+
+export interface AdminBarbearia {
+  id: string;
+  nome: string;
+  email: string;
+  senha?: string;
+  barbeariaId: string;
+  barbeariaNome: string;
+  telefone?: string;
+  status: 'ativo' | 'inativo';
+  dataCriacao: string;
+}
 
 export interface UserProfile {
   id: string;

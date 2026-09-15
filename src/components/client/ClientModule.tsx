@@ -17,6 +17,7 @@ import {
   CalendarCheck,
   XCircle,
   Share2,
+  Lock,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -33,6 +34,7 @@ interface ClientModuleProps {
   servicos: Servico[];
   agendamentos: Agendamento[];
   onRefreshData: () => void;
+  onOpenStaffLogin?: () => void;
 }
 
 export const ClientModule: React.FC<ClientModuleProps> = ({
@@ -41,6 +43,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
   servicos,
   agendamentos,
   onRefreshData,
+  onOpenStaffLogin,
 }) => {
   // Navigation tabs: 'home' | 'agendar' | 'agendamentos' | 'perfil'
   const [activeTab, setActiveTab] = useState<'home' | 'agendar' | 'agendamentos' | 'perfil'>('home');
@@ -982,6 +985,19 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
                 <strong>Total de agendamentos no sistema:</strong> {clientAppointments.length}
               </p>
             </div>
+
+            {onOpenStaffLogin && (
+              <div className="pt-3 border-t border-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={onOpenStaffLogin}
+                  className="w-full py-2.5 px-3 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-zinc-200 text-xs font-medium flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span>Área da Equipe (Barbeiro / Admin / Master)</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

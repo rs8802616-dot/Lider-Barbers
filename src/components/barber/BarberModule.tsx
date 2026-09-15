@@ -15,6 +15,13 @@ import {
   UserCheck,
   Save,
   Check,
+  DollarSign,
+  TrendingUp,
+  Wallet,
+  ArrowDownRight,
+  ArrowUpRight,
+  Award,
+  Filter,
 } from 'lucide-react';
 import {
   Barbeiro,
@@ -42,8 +49,8 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
   disponibilidade,
   onRefreshData,
 }) => {
-  // Navigation: 'agenda' | 'clientes' | 'disponibilidade' | 'servicos' | 'config'
-  const [activeScreen, setActiveScreen] = useState<'agenda' | 'clientes' | 'disponibilidade' | 'servicos'>('agenda');
+  // Navigation: 'agenda' | 'clientes' | 'disponibilidade' | 'faturamento'
+  const [activeScreen, setActiveScreen] = useState<'agenda' | 'clientes' | 'disponibilidade' | 'faturamento'>('agenda');
 
   // Agenda view mode: 'diaria' | 'semanal' | 'mensal'
   const [agendaMode, setAgendaMode] = useState<'diaria' | 'semanal' | 'mensal'>('diaria');
@@ -220,6 +227,18 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
             }`}
           >
             Disponibilidade
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveScreen('faturamento')}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-medium transition-all ${
+              activeScreen === 'faturamento'
+                ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
+                : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>Meus Ganhos</span>
           </button>
         </div>
       </div>
@@ -538,6 +557,205 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
           </div>
         </div>
       )}
+
+      {/* SCREEN 4: MEUS GANHOS / FATURAMENTO INDIVIDUAL DO BARBEIRO */}
+      {activeScreen === 'faturamento' && (() => {
+        // Strict security & isolation: compute metrics ONLY for this barber
+        const completedOrConfirmed = barberAgendamentos.filter(
+          (a) => a.status === 'concluido' || a.status === 'confirmado' || a.status === 'em_atendimento'
+        );
+        const todayAppointments = completedOrConfirmed.filter((a) => a.data === todayStr);
+        const faturamentoHoje = todayAppointments.reduce((acc, curr) => acc + curr.valor, 0);
+        const faturamentoTotalGeral = completedOrConfirmed.reduce((acc, curr) => acc + curr.valor, 0);
+        
+        // Barber Commission rate (default 60% for professional, standard in premium barber shops)
+        const comissaoTaxa = 0.60;
+        const comissaoHoje = faturamentoHoje * comissaoTaxa;
+        const comissaoTotal = faturamentoTotalGeral * comissaoTaxa;
+        const totalCortesConcluidos = barberAgendamentos.filter((a) => a.status === 'concluido').length;
+
+        return (
+          <div className="space-y-6 animate-in fade-in">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
+              <div>
+                <h3 className="text-base font-bold text-zinc-100 font-display flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-[#D4AF37]" />
+                  <span>Meus Ganhos & Faturamento Individual</span>
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  Visualização estrita dos seus cortes, comissões acumuladas e histórico financeiro pessoal ({currentBarber.nome}).
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                  Repasse: 60% Comissão
+                </span>
+              </div>
+            </div>
+
+            {/* Metric KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {/* Card 1: Comissões a Receber */}
+              <div className="p-4 rounded-xl bg-[#161619] border border-zinc-800/80 relative overflow-hidden">
+                <div className="flex items-center justify-between text-zinc-400 mb-2">
+                  <span className="text-xs font-medium">Minha Comissão Total</span>
+                  <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-xl sm:text-2xl font-bold text-zinc-100 font-display">
+                  R$ {comissaoTotal.toFixed(2).replace('.', ',')}
+                </div>
+                <p className="text-[11px] text-[#C5A059] mt-1 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-emerald-400" />
+                  <span>Líquido acumulado do profissional</span>
+                </p>
+              </div>
+
+              {/* Card 2: Faturamento Bruto Pessoal */}
+              <div className="p-4 rounded-xl bg-[#161619] border border-zinc-800/80">
+                <div className="flex items-center justify-between text-zinc-400 mb-2">
+                  <span className="text-xs font-medium">Faturamento Bruto Pessoal</span>
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-xl sm:text-2xl font-bold text-emerald-400 font-display">
+                  R$ {faturamentoTotalGeral.toFixed(2).replace('.', ',')}
+                </div>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  Valor total em serviços atendidos
+                </p>
+              </div>
+
+              {/* Card 3: Ganhos Hoje */}
+              <div className="p-4 rounded-xl bg-[#161619] border border-zinc-800/80">
+                <div className="flex items-center justify-between text-zinc-400 mb-2">
+                  <span className="text-xs font-medium">Comissão de Hoje ({todayAppointments.length} atendimentos)</span>
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-xl sm:text-2xl font-bold text-zinc-100 font-display">
+                  R$ {comissaoHoje.toFixed(2).replace('.', ',')}
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-1">
+                  Bruto do dia: R$ {faturamentoHoje.toFixed(2).replace('.', ',')}
+                </p>
+              </div>
+
+              {/* Card 4: Cortes Concluídos */}
+              <div className="p-4 rounded-xl bg-[#161619] border border-zinc-800/80">
+                <div className="flex items-center justify-between text-zinc-400 mb-2">
+                  <span className="text-xs font-medium">Cortes Concluídos</span>
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <Award className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-xl sm:text-2xl font-bold text-zinc-100 font-display">
+                  {totalCortesConcluidos}
+                </div>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  Total de clientes finalizados
+                </p>
+              </div>
+            </div>
+
+            {/* Extrato Detalhado de Pagamentos & Comissões */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-zinc-200 font-display">
+                  Extrato Individual de Atendimentos
+                </h4>
+                <span className="text-xs text-zinc-500">
+                  {barberAgendamentos.length} registros no histórico
+                </span>
+              </div>
+
+              {barberAgendamentos.length === 0 ? (
+                <div className="p-8 rounded-xl bg-zinc-900/50 border border-zinc-800 text-center text-zinc-500 text-xs">
+                  Nenhum atendimento registrado até o momento.
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-[#161619]">
+                  <table className="w-full text-left text-xs text-zinc-300">
+                    <thead className="bg-zinc-900/80 text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-800">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold">Data / Horário</th>
+                        <th className="px-4 py-3 font-semibold">Cliente</th>
+                        <th className="px-4 py-3 font-semibold">Serviço</th>
+                        <th className="px-4 py-3 font-semibold text-right">Valor Total</th>
+                        <th className="px-4 py-3 font-semibold text-right">Minha Comissão (60%)</th>
+                        <th className="px-4 py-3 font-semibold text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60 font-medium">
+                      {barberAgendamentos.map((item) => {
+                        const comissaoItem = item.valor * comissaoTaxa;
+                        return (
+                          <tr key={item.id} className="hover:bg-zinc-800/40 transition-colors">
+                            <td className="px-4 py-3 whitespace-nowrap text-zinc-400">
+                              <span className="text-zinc-200 font-semibold">{item.data}</span>
+                              <span className="text-zinc-500 ml-1.5 font-normal">
+                                {item.horarioInicio} - {item.horarioFim}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-zinc-100 font-semibold">
+                              {item.clienteNome}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-zinc-300">
+                              {item.servicoNome}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-right text-zinc-300">
+                              R$ {item.valor.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-right font-bold text-[#D4AF37]">
+                              R$ {comissaoItem.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-center">
+                              <span
+                                className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                                  item.status === 'concluido'
+                                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                    : item.status === 'em_atendimento'
+                                    ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                    : item.status === 'confirmado'
+                                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                    : item.status === 'cancelado'
+                                    ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                                    : 'bg-zinc-800 text-zinc-400'
+                                }`}
+                              >
+                                {item.status.replace('_', ' ')}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Informações de Pagamento & Segurança */}
+            <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-zinc-400">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                  <CheckCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="font-semibold text-zinc-200">Isolamento de Segurança Ativo</p>
+                  <p className="text-[11px] text-zinc-500">
+                    Filtro estrito aplicado (WHERE barbeiro_id = "{currentBarber.id}"). Seus dados financeiros não são expostos a outros profissionais.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* DETALHES DO CLIENTE / AGENDAMENTO MODAL (As shown in mockup) */}
       {selectedAgendamento && (

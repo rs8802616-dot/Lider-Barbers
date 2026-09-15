@@ -50,6 +50,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    // Unidades de Barbearias (Multi-tenant)
+    match /barbearias/{barbeariaId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Administradores de Barbearias cadastrados pelo Super Admin (Master)
+    match /administradores_barbearia/{adminId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }
 

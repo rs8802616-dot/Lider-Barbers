@@ -23,6 +23,7 @@ import { InstallPwaModal } from './components/common/InstallPwaModal';
 import { ClientModule } from './components/client/ClientModule';
 import { BarberModule } from './components/barber/BarberModule';
 import { AdminModule } from './components/admin/AdminModule';
+import { SuperAdminModule } from './components/superadmin/SuperAdminModule';
 import {
   registerServiceWorker,
   subscribeNotifications,
@@ -30,17 +31,22 @@ import {
 } from './services/notificationService';
 
 export default function App() {
-  // Active role: 'cliente' | 'barbeiro' | 'administrador'
+  // Active role: 'cliente' | 'barbeiro' | 'administrador' | 'super_admin'
   const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
 
-  // Authenticated roles tracker to ensure clientes cannot leak into barber or admin views
-  const [unlockedRoles, setUnlockedRoles] = useState<{ barbeiro: boolean; administrador: boolean }>({
+  // Authenticated roles tracker to ensure clientes cannot leak into barber, admin, or master views
+  const [unlockedRoles, setUnlockedRoles] = useState<{
+    barbeiro: boolean;
+    administrador: boolean;
+    super_admin: boolean;
+  }>({
     barbeiro: false,
     administrador: false,
+    super_admin: false,
   });
   const [authModalState, setAuthModalState] = useState<{
     isOpen: boolean;
-    targetRole: 'barbeiro' | 'administrador';
+    targetRole: 'barbeiro' | 'administrador' | 'super_admin';
   }>({
     isOpen: false,
     targetRole: 'barbeiro',
@@ -148,7 +154,7 @@ export default function App() {
       return;
     }
 
-    // If attempting to switch to barber or admin, verify if already authenticated
+    // If attempting to switch to barber, admin, or super_admin, verify if authenticated
     if (role === 'barbeiro') {
       if (unlockedRoles.barbeiro) {
         setCurrentRole('barbeiro');
@@ -161,13 +167,23 @@ export default function App() {
       } else {
         setAuthModalState({ isOpen: true, targetRole: 'administrador' });
       }
+    } else if (role === 'super_admin') {
+      if (unlockedRoles.super_admin) {
+        setCurrentRole('super_admin');
+      } else {
+        setAuthModalState({ isOpen: true, targetRole: 'super_admin' });
+      }
     }
   };
 
-  const handleAuthSuccess = () => {
-    const target = authModalState.targetRole;
+  const handleAuthSuccess = (role?: 'barbeiro' | 'administrador' | 'super_admin') => {
+    const target = role || authModalState.targetRole;
     setUnlockedRoles((prev) => ({ ...prev, [target]: true }));
     setCurrentRole(target);
+  };
+
+  const handleLogoutToClient = () => {
+    setCurrentRole('cliente');
   };
 
   return (
@@ -176,6 +192,7 @@ export default function App() {
       <Header
         currentRole={currentRole}
         onRoleChange={handleRoleChangeAttempt}
+        onLogoutToClient={handleLogoutToClient}
         notifications={notifications}
         onOpenNotifications={() => setIsNotifModalOpen(true)}
         onOpenInstall={() => setIsInstallModalOpen(true)}
@@ -184,7 +201,9 @@ export default function App() {
             ? clientUser.nome
             : currentRole === 'barbeiro'
             ? barberUser.nome
-            : 'Administrador'
+            : currentRole === 'super_admin'
+            ? 'Master (Dono)'
+            : 'Admin Barbearia'
         }
       />
 
@@ -198,6 +217,7 @@ export default function App() {
               servicos={servicos}
               agendamentos={agendamentos}
               onRefreshData={handleRefresh}
+              onOpenStaffLogin={() => setAuthModalState({ isOpen: true, targetRole: 'barbeiro' })}
             />
           )}
 
@@ -218,6 +238,10 @@ export default function App() {
               agendamentos={agendamentos}
               onRefreshData={handleRefresh}
             />
+          )}
+
+          {currentRole === 'super_admin' && (
+            <SuperAdminModule onRefreshData={handleRefresh} />
           )}
         </div>
       </main>

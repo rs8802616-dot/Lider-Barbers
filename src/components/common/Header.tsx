@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Crown, Bell, User, Scissors, ShieldAlert, Sparkles, Download, Lock } from 'lucide-react';
+import { Crown, Bell, User, Scissors, ShieldAlert, Sparkles, Download, LogOut, ShieldCheck } from 'lucide-react';
 import { UserRole, AppNotification } from '../../types';
 import { requestPushPermission, triggerBrowserNotification } from '../../services/notificationService';
 
 interface HeaderProps {
   currentRole: UserRole;
   onRoleChange: (role: UserRole) => void;
+  onLogoutToClient?: () => void;
   notifications: AppNotification[];
   onOpenNotifications: () => void;
   onOpenInstall: () => void;
@@ -15,6 +16,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   currentRole,
   onRoleChange,
+  onLogoutToClient,
   notifications,
   onOpenNotifications,
   onOpenInstall,
@@ -56,6 +58,22 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 tracking-widest uppercase">
                 PWA
               </span>
+              {currentRole === 'super_admin' && (
+                <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wider uppercase flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-amber-400" />
+                  Master
+                </span>
+              )}
+              {currentRole === 'administrador' && (
+                <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 tracking-wider uppercase">
+                  Admin Unidade
+                </span>
+              )}
+              {currentRole === 'barbeiro' && (
+                <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 tracking-wider uppercase">
+                  Barbeiro
+                </span>
+              )}
             </div>
             <p className="text-[10px] text-[#C5A059] tracking-widest font-medium uppercase">
               Estilo • Respeito • Liderança
@@ -63,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Controls: Install App, Push Notifications, Persona Switcher */}
+        {/* Controls: Install App, Push Notifications, Persona Display */}
         <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5 w-full md:w-auto">
           {/* Baixar Aplicativo PWA */}
           <button
@@ -105,49 +123,42 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Role Persona Switcher (Segurança & Separação por Perfil) */}
-          <div className="flex items-center bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 text-xs">
-            <button
-              type="button"
-              onClick={() => onRoleChange('cliente')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-medium transition-all ${
-                currentRole === 'cliente'
-                  ? 'bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 shadow-sm font-semibold'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>Cliente</span>
-            </button>
+          {/* User Status / Role View (Estrito isolamento: Clientes NÃO visualizam botões de Barbeiro/Admin) */}
+          {currentRole === 'cliente' ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-300">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <User className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span className="font-medium text-zinc-200">{activeUserName || 'Cliente'}</span>
+            </div>
+          ) : (
+            /* Privileged User Controls: Shows active staff role and quick exit button */
+            <div className="flex items-center gap-2 bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 text-xs">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 text-zinc-200">
+                {currentRole === 'barbeiro' && <Scissors className="w-3.5 h-3.5 text-[#D4AF37]" />}
+                {currentRole === 'administrador' && <ShieldAlert className="w-3.5 h-3.5 text-[#D4AF37]" />}
+                {currentRole === 'super_admin' && <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
+                <span className="font-semibold text-xs text-[#D4AF37]">
+                  {currentRole === 'barbeiro'
+                    ? activeUserName
+                    : currentRole === 'administrador'
+                    ? 'Admin Barbearia'
+                    : 'Master'}
+                </span>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => onRoleChange('barbeiro')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-medium transition-all ${
-                currentRole === 'barbeiro'
-                  ? 'bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 shadow-sm font-semibold'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <Scissors className="w-3.5 h-3.5" />
-              <span>Barbeiro</span>
-              {currentRole !== 'barbeiro' && <Lock className="w-2.5 h-2.5 opacity-60 ml-0.5" />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onRoleChange('administrador')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-medium transition-all ${
-                currentRole === 'administrador'
-                  ? 'bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 shadow-sm font-semibold'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Admin</span>
-              {currentRole !== 'administrador' && <Lock className="w-2.5 h-2.5 opacity-60 ml-0.5" />}
-            </button>
-          </div>
+              {onLogoutToClient && (
+                <button
+                  type="button"
+                  onClick={onLogoutToClient}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-800 text-zinc-400 hover:text-rose-400 hover:bg-zinc-800/80 transition-colors font-medium text-[11px]"
+                  title="Sair do painel e voltar para a visão do Cliente"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Sair</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>
