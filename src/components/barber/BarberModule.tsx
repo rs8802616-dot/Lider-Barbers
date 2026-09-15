@@ -87,7 +87,7 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
       if (target) {
         let msg = `O status do seu agendamento foi alterado para "${newStatus}".`;
         if (newStatus === 'em_atendimento') msg = `${currentBarber.nome} iniciou seu atendimento!`;
-        if (newStatus === 'concluido') msg = `Atendimento concluído! Obrigado pela preferência na Barbearia Liberdade.`;
+        if (newStatus === 'concluido') msg = `Atendimento concluído! Obrigado pela preferência na Líder Barbers.`;
         if (newStatus === 'confirmado') msg = `Seu horário foi confirmado pelo barbeiro ${currentBarber.nome}.`;
 
         await sendNotification(

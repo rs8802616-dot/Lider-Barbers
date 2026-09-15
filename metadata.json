@@ -1,6 +1,6 @@
 {
-  "name": "Barbearia Liberdade",
-  "description": "Aplicativo moderno e responsivo para Barbearia Liberdade com agendamento online em tempo real, painel de barbeiros, gestão administrativa e suporte PWA.",
+  "name": "Líder Barbers",
+  "description": "Site profissional e responsivo para Líder Barbers com agendamento online em tempo real, painel de barbeiros, gestão administrativa e notificações.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

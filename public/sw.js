@@ -64,8 +64,8 @@ self.addEventListener('fetch', (event) => {
 // Real push notification event handler
 self.addEventListener('push', (event) => {
   let data = {
-    title: 'Barbearia Liberdade',
-    body: 'Você tem uma nova atualização na Barbearia Liberdade.',
+    title: 'Líder Barbers',
+    body: 'Você tem uma nova atualização na Líder Barbers.',
     icon: '/icons/icon-192.png',
   };
 
@@ -88,7 +88,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Barbearia Liberdade', options)
+    self.registration.showNotification(data.title || 'Líder Barbers', options)
   );
 });
 

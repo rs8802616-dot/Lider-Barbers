@@ -27,7 +27,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
     await requestPushPermission();
     await sendNotification(
       currentUserId,
-      'Barbearia Liberdade • Notificação Push',
+      'Líder Barbers • Notificação Push',
       'Lembrete: Seu atendimento está confirmado e o barbeiro já está te aguardando!',
       'lembrete'
     );

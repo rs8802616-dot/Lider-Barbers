@@ -334,7 +334,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
               Olá, {currentUser.nome}!
             </h2>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1 leading-relaxed">
-              Bem-vindo à Barbearia Liberdade. Escolha o serviço, o barbeiro e agende seu horário.
+              Bem-vindo à Líder Barbers. Escolha o serviço, o barbeiro e agende seu horário.
             </p>
           </div>
 
@@ -344,10 +344,10 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="max-w-xl">
                 <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs uppercase font-bold tracking-widest text-[#D4AF37] mb-2">
-                  <Crown className="w-3.5 h-3.5" /> Barbearia Liberdade
+                  <Crown className="w-3.5 h-3.5" /> Líder Barbers
                 </span>
                 <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-zinc-100 font-display leading-tight mb-2">
-                  Mais que um corte, uma experiência.
+                  Mais que um corte, uma experiência de liderança.
                 </h3>
                 <p className="text-xs sm:text-sm text-zinc-400">
                   Profissionais de elite, ambiente refinado e atendimento de excelência no seu tempo.
@@ -459,11 +459,11 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
           <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-2 text-xs text-zinc-400">
             <div className="flex items-center gap-2 text-zinc-200 font-medium">
               <MapPin className="w-4 h-4 text-[#D4AF37]" />
-              <span>Barbearia Liberdade • Centro - São Paulo/SP</span>
+              <span>Líder Barbers • Unidade Principal - Centro</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-zinc-500" />
-              <span>Segunda a Sábado: 08:00 às 18:00</span>
+              <span>Segunda a Sábado: 08:00 às 20:00</span>
             </div>
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-zinc-500" />
@@ -720,7 +720,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
                   <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-2 text-xs text-zinc-400">
                     <div className="flex items-center gap-2 text-zinc-200 font-semibold">
                       <MapPin className="w-4 h-4 text-[#D4AF37]" />
-                      <span>Barbearia Liberdade • Centro - São Paulo/SP</span>
+                      <span>Líder Barbers • Unidade Principal - Centro</span>
                     </div>
                     <p className="text-[11px] text-zinc-500">
                       Por favor, chegue com 5 minutos de antecedência. Notificações de confirmação e lembretes serão emitidos em seu dispositivo.
@@ -976,7 +976,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
 
             <div className="pt-3 border-t border-zinc-800/80 space-y-2 text-zinc-400">
               <p>
-                <strong>Unidade Principal:</strong> Barbearia Liberdade - Centro
+                <strong>Unidade Principal:</strong> Líder Barbers - Centro
               </p>
               <p>
                 <strong>Total de agendamentos no sistema:</strong> {clientAppointments.length}

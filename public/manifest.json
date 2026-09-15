@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Barbearia Liberdade",
-  "short_name": "Liberdade",
-  "description": "Agendamento online e gestão para a Barbearia Liberdade.",
+  "name": "Líder Barbers",
+  "short_name": "Líder",
+  "description": "Agendamento online e gestão para a Líder Barbers.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

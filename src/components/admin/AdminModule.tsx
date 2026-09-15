@@ -96,7 +96,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
       id: newId,
       nome: barberName,
       especialidade: barberSpecialty || 'Especialista em Cortes',
-      descricao: 'Profissional qualificado Barbearia Liberdade',
+      descricao: 'Profissional qualificado Líder Barbers',
       foto: barberPhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       servicosIds: servicos.map((s) => s.id),
       status: 'ativo',
@@ -157,7 +157,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
           </div>
           <div>
             <h3 className="text-sm sm:text-base font-bold text-zinc-100 font-display">
-              Barbearia Liberdade
+              Líder Barbers
             </h3>
             <p className="text-xs text-[#C5A059] font-medium">Painel Administrativo Geral</p>
           </div>
@@ -231,7 +231,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
               Olá, Administrador!
             </h2>
             <p className="text-xs text-zinc-400">
-              Aqui está um resumo em tempo real da Barbearia Liberdade.
+              Aqui está um resumo em tempo real da Líder Barbers.
             </p>
           </div>
 

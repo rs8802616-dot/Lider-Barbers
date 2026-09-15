@@ -188,7 +188,7 @@ export async function createAgendamentoSeguro(agendamentoData: Omit<Agendamento,
     // To Admin:
     await sendNotification(
       'admin',
-      'Nova Reserva na Barbearia Liberdade',
+      'Nova Reserva na Líder Barbers',
       `${agendamentoData.clienteNome} reservou com ${agendamentoData.barbeiroNome} (${agendamentoData.horarioInicio}).`,
       'reserva',
       docRef.id

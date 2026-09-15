@@ -49,14 +49,14 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-bold tracking-wider text-zinc-100 uppercase font-display">
-                Barbearia Liberdade
+                Líder Barbers
               </h1>
               <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 tracking-widest uppercase">
                 PWA
               </span>
             </div>
             <p className="text-[10px] text-[#C5A059] tracking-widest font-medium uppercase">
-              Estilo • Respeito • Liberdade
+              Estilo • Respeito • Liderança
             </p>
           </div>
         </div>

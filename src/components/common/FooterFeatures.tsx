@@ -50,12 +50,12 @@ export const FooterFeatures: React.FC = () => {
         <div className="pt-6 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
           <div className="flex items-center gap-2">
             <Crown className="w-4 h-4 text-[#D4AF37]" />
-            <span className="font-semibold text-zinc-300">Barbearia Liberdade</span>
+            <span className="font-semibold text-zinc-300">Líder Barbers</span>
             <span>—</span>
             <span>Tecnologia a favor do seu estilo.</span>
           </div>
           <p className="text-[11px]">
-            &copy; {new Date().getFullYear()} Barbearia Liberdade. Todos os direitos reservados.
+            &copy; {new Date().getFullYear()} Líder Barbers. Todos os direitos reservados.
           </p>
         </div>
       </div>
