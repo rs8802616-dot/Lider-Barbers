@@ -26,7 +26,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { AdminBarbearia, BarbeariaUnidade } from '../../types';
-import { db } from '../../firebase/config';
+import { db, purgeAllTestData } from '../../firebase/config';
 import {
   collection,
   getDocs,
@@ -42,56 +42,18 @@ interface SuperAdminModuleProps {
   onExitToStore?: () => void;
 }
 
-// Initial seed units if database is empty
+// Initial seed units if database is empty - Clean production starter
 const DEFAULT_BARBEARIAS: BarbeariaUnidade[] = [
   {
     id: 'unidade-matriz',
-    nome: 'Líder Barbers - Matriz Centro',
-    cidade: 'São Paulo - SP',
-    endereco: 'Rua Augusta, 1200 - Consolação',
-    telefone: '(11) 3214-5678',
-    status: 'ativo',
-  },
-  {
-    id: 'unidade-jardins',
-    nome: 'Líder Barbers - Unidade Jardins',
-    cidade: 'São Paulo - SP',
-    endereco: 'Alameda Lorena, 850 - Jardins',
-    telefone: '(11) 3890-1234',
-    status: 'ativo',
-  },
-  {
-    id: 'unidade-morumbi',
-    nome: 'Líder Barbers - Unidade Morumbi',
-    cidade: 'São Paulo - SP',
-    endereco: 'Av. Giovanni Gronchi, 3400',
-    telefone: '(11) 3740-9988',
+    nome: 'Líder Barbers - Matriz',
+    cidade: 'Brasil',
     status: 'ativo',
   },
 ];
 
-const DEFAULT_ADMINS: AdminBarbearia[] = [
-  {
-    id: 'admin-matriz-1',
-    nome: 'Marcos Vinícius (Gerente Geral)',
-    email: 'marcos.gerente@liderbarbers.com.br',
-    barbeariaId: 'unidade-matriz',
-    barbeariaNome: 'Líder Barbers - Matriz Centro',
-    telefone: '(11) 98888-1111',
-    status: 'ativo',
-    dataCriacao: new Date().toISOString(),
-  },
-  {
-    id: 'admin-jardins-1',
-    nome: 'Eduardo Silveira',
-    email: 'eduardo.jardins@liderbarbers.com.br',
-    barbeariaId: 'unidade-jardins',
-    barbeariaNome: 'Líder Barbers - Unidade Jardins',
-    telefone: '(11) 97777-2222',
-    status: 'ativo',
-    dataCriacao: new Date().toISOString(),
-  },
-];
+// No mock admins - completely clean for production
+const DEFAULT_ADMINS: AdminBarbearia[] = [];
 
 export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
   onRefreshData,
@@ -171,6 +133,29 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
     window.open(waUrl, '_blank');
   };
 
+  const [isPurging, setIsPurging] = useState(false);
+  const [purgeMessage, setPurgeMessage] = useState<string | null>(null);
+
+  // Manual purge trigger for the owner
+  const handlePurgeAllTestRecords = async () => {
+    if (!window.confirm('Atenção: deseja limpar todos os agendamentos, administradores e unidades de teste? O sistema ficará 100% zerado e limpo para você operar.')) {
+      return;
+    }
+    try {
+      setIsPurging(true);
+      await purgeAllTestData();
+      await loadSuperAdminData();
+      if (onRefreshData) onRefreshData();
+      setPurgeMessage('Todos os dados de teste foram apagados com sucesso! O sistema está limpo.');
+      setTimeout(() => setPurgeMessage(null), 4000);
+    } catch (err) {
+      console.error('Erro ao purgar dados:', err);
+      setPurgeMessage('Erro ao limpar dados de teste.');
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   // Load data from Firestore or fallback gracefully
   const loadSuperAdminData = async () => {
     try {
@@ -180,13 +165,15 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
       const unitsSnap = await getDocs(collection(db, 'barbearias'));
       let loadedUnits: BarbeariaUnidade[] = [];
       if (unitsSnap.empty) {
-        // Seed default units
+        // Seed clean default unit
         for (const u of DEFAULT_BARBEARIAS) {
           await setDoc(doc(db, 'barbearias', u.id), u);
         }
         loadedUnits = DEFAULT_BARBEARIAS;
       } else {
-        loadedUnits = unitsSnap.docs.map((d) => d.data() as BarbeariaUnidade);
+        loadedUnits = unitsSnap.docs
+          .map((d) => d.data() as BarbeariaUnidade)
+          .filter((u) => !['unidade-jardins', 'unidade-morumbi'].includes(u.id));
       }
       setBarbearias(loadedUnits);
       if (loadedUnits.length > 0) {
@@ -196,20 +183,19 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
       // Load admins
       const adminsSnap = await getDocs(collection(db, 'administradores_barbearia'));
       let loadedAdmins: AdminBarbearia[] = [];
-      if (adminsSnap.empty) {
-        for (const adm of DEFAULT_ADMINS) {
-          await setDoc(doc(db, 'administradores_barbearia', adm.id), adm);
-        }
-        loadedAdmins = DEFAULT_ADMINS;
-      } else {
-        loadedAdmins = adminsSnap.docs.map((d) => d.data() as AdminBarbearia);
+      if (!adminsSnap.empty) {
+        loadedAdmins = adminsSnap.docs
+          .map((d) => d.data() as AdminBarbearia)
+          .filter((adm) => !['admin-matriz-1', 'admin-jardins-1'].includes(adm.id));
       }
       setAdmins(loadedAdmins);
     } catch (err) {
       console.warn('Erro ao conectar Firestore para Super Admin, usando estado local:', err);
       setBarbearias(DEFAULT_BARBEARIAS);
-      setSelectedBarbeariaId(DEFAULT_BARBEARIAS[0].id);
-      setAdmins(DEFAULT_ADMINS);
+      if (DEFAULT_BARBEARIAS.length > 0) {
+        setSelectedBarbeariaId(DEFAULT_BARBEARIAS[0].id);
+      }
+      setAdmins([]);
     } finally {
       setLoading(false);
     }
@@ -386,6 +372,17 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
           )}
           <button
             type="button"
+            disabled={isPurging}
+            onClick={handlePurgeAllTestRecords}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/25 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
+            title="Excluir agendamentos e registros de teste"
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" />
+            <span className="hidden sm:inline">{isPurging ? 'Limpando...' : 'Zerar Dados de Teste'}</span>
+            <span className="sm:hidden">Zerar</span>
+          </button>
+          <button
+            type="button"
             onClick={loadSuperAdminData}
             className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
             title="Recarregar dados"
@@ -402,6 +399,13 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
           </button>
         </div>
       </div>
+
+      {purgeMessage && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in">
+          <Check className="w-4 h-4 shrink-0 text-emerald-400" />
+          <span>{purgeMessage}</span>
+        </div>
+      )}
 
       {/* Central de Links & Acesso Inteligente (Query Params) */}
       <ShareLinksCard role="super_admin" />

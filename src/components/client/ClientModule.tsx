@@ -106,6 +106,14 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Client Identification fields for real customer booking
+  const [clientNome, setClientNome] = useState<string>(() => {
+    return localStorage.getItem('lider_client_nome') || currentUser.nome || '';
+  });
+  const [clientTelefone, setClientTelefone] = useState<string>(() => {
+    return localStorage.getItem('lider_client_telefone') || currentUser.telefone || '';
+  });
+
   // Appointments filter tab
   const [appointmentsTab, setAppointmentsTab] = useState<'proximos' | 'historico'>('proximos');
 
@@ -144,8 +152,27 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
   const handleConfirmBooking = async () => {
     if (!selectedServico || !selectedBarbeiro || !selectedDate || !selectedTime) return;
 
+    const name = clientNome.trim();
+    const phone = clientTelefone.trim();
+
+    if (!name) {
+      setErrorMessage('Por favor, informe seu nome para o agendamento.');
+      return;
+    }
+    if (!phone || phone.replace(/\D/g, '').length < 8) {
+      setErrorMessage('Por favor, informe seu WhatsApp com DDD.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
+
+    // Save profile locally for future seamless visits
+    localStorage.setItem('lider_client_nome', name);
+    localStorage.setItem('lider_client_telefone', phone);
+    const cleanDigits = phone.replace(/\D/g, '');
+    const finalClientId = `cli-${cleanDigits}`;
+    localStorage.setItem('lider_client_id', finalClientId);
 
     // Calculate end time
     const [h, m] = selectedTime.split(':').map(Number);
@@ -156,9 +183,9 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
     const horarioFim = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
     const newBooking: Omit<Agendamento, 'id'> = {
-      clienteId: currentUser.id,
-      clienteNome: currentUser.nome,
-      clienteTelefone: currentUser.telefone,
+      clienteId: finalClientId,
+      clienteNome: name,
+      clienteTelefone: phone,
       barbeiroId: selectedBarbeiro.id,
       barbeiroNome: selectedBarbeiro.nome,
       servicoId: selectedServico.id,
@@ -281,8 +308,15 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
     );
   };
 
-  // User's appointments
-  const clientAppointments = agendamentos.filter((a) => a.clienteId === currentUser.id);
+  // User's appointments - match by ID, phone, or saved client credentials
+  const clientAppointments = agendamentos.filter((a) => {
+    const savedPhone = (localStorage.getItem('lider_client_telefone') || clientTelefone).replace(/\D/g, '');
+    const savedId = localStorage.getItem('lider_client_id') || currentUser.id;
+    if (savedId && a.clienteId === savedId) return true;
+    if (savedPhone && a.clienteTelefone && a.clienteTelefone.replace(/\D/g, '') === savedPhone) return true;
+    if (clientNome.trim() && a.clienteNome && a.clienteNome.toLowerCase() === clientNome.trim().toLowerCase()) return true;
+    return false;
+  });
   const upcomingAppointments = clientAppointments.filter(
     (a) => a.status !== 'cancelado' && a.status !== 'concluido'
   );
@@ -888,6 +922,44 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
                     </div>
                   </div>
 
+                  {/* Customer Information Form */}
+                  <div className="pt-3 border-t border-zinc-800 space-y-3">
+                    <div className="flex items-center gap-2 text-zinc-200 font-semibold text-xs">
+                      <User className="w-3.5 h-3.5 text-[#D4AF37]" />
+                      <span>Seus dados para confirmação</span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="block text-[11px] text-zinc-400 mb-1">
+                          Seu Nome Completo <span className="text-[#D4AF37]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={clientNome}
+                          onChange={(e) => setClientNome(e.target.value)}
+                          placeholder="Ex: Carlos Santana"
+                          className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 text-xs focus:outline-none focus:border-[#D4AF37] transition-colors"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-zinc-400 mb-1">
+                          WhatsApp com DDD <span className="text-[#D4AF37]">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={clientTelefone}
+                          onChange={(e) => setClientTelefone(e.target.value)}
+                          placeholder="Ex: (11) 98765-4321"
+                          className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 text-xs focus:outline-none focus:border-[#D4AF37] transition-colors"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Total Summary */}
                   <div className="pt-3 border-t border-zinc-800 flex items-center justify-between">
                     <span className="font-semibold text-zinc-300 text-sm">Total a Pagar</span>
@@ -1089,20 +1161,52 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
                 <User className="w-7 h-7" />
               </div>
               <div>
-                <h4 className="text-base font-bold text-zinc-100">{currentUser.nome}</h4>
-                <p className="text-zinc-400">{currentUser.telefone}</p>
+                <h4 className="text-base font-bold text-zinc-100">{clientNome || 'Novo Cliente'}</h4>
+                <p className="text-zinc-400">{clientTelefone || 'WhatsApp não informado'}</p>
                 <span className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Cliente Ativo
+                  Conta Ativa
                 </span>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-zinc-800/80 space-y-3">
+              <h5 className="font-semibold text-zinc-200">Editar Meus Dados</h5>
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-[11px] text-zinc-400 mb-1">Nome Completo</label>
+                  <input
+                    type="text"
+                    value={clientNome}
+                    onChange={(e) => {
+                      setClientNome(e.target.value);
+                      localStorage.setItem('lider_client_nome', e.target.value);
+                    }}
+                    placeholder="Seu nome completo"
+                    className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 text-xs focus:outline-none focus:border-[#D4AF37]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-zinc-400 mb-1">WhatsApp com DDD</label>
+                  <input
+                    type="tel"
+                    value={clientTelefone}
+                    onChange={(e) => {
+                      setClientTelefone(e.target.value);
+                      localStorage.setItem('lider_client_telefone', e.target.value);
+                    }}
+                    placeholder="Seu WhatsApp"
+                    className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 text-xs focus:outline-none focus:border-[#D4AF37]"
+                  />
+                </div>
               </div>
             </div>
 
             <div className="pt-3 border-t border-zinc-800/80 space-y-2 text-zinc-400">
               <p>
-                <strong>Unidade Principal:</strong> Líder Barbers - Centro
+                <strong>Unidade:</strong> Líder Barbers - Matriz
               </p>
               <p>
-                <strong>Total de agendamentos no sistema:</strong> {clientAppointments.length}
+                <strong>Meus agendamentos registrados:</strong> {clientAppointments.length}
               </p>
             </div>
           </div>

@@ -190,88 +190,78 @@ export async function seedInitialDataIfNeeded() {
       await batch.commit();
     }
 
-    // Check initial sample appointments to populate dashboard and barber agenda like in the mockup
-    const agendamentosSnap = await getDocs(collection(db, 'agendamentos'));
-    if (agendamentosSnap.empty) {
-      const today = new Date().toISOString().split('T')[0];
-      const sampleAgendamentos: Agendamento[] = [
-        {
-          id: 'agend-1',
-          clienteId: 'cli-joao',
-          clienteNome: 'João Silva',
-          clienteTelefone: '(11) 98765-4321',
-          barbeiroId: 'barb-carlos',
-          barbeiroNome: 'Carlos Silva',
-          servicoId: 'serv-corte',
-          servicoNome: 'Corte de cabelo',
-          data: today,
-          horarioInicio: '08:00',
-          horarioFim: '08:30',
-          duracaoMinutos: 30,
-          status: 'confirmado',
-          valor: 50.0,
-          dataCriacao: new Date().toISOString(),
-        },
-        {
-          id: 'agend-2',
-          clienteId: 'cli-pedro',
-          clienteNome: 'Pedro Santos',
-          clienteTelefone: '(11) 99123-4567',
-          barbeiroId: 'barb-carlos',
-          barbeiroNome: 'Carlos Silva',
-          servicoId: 'serv-barba',
-          servicoNome: 'Barba',
-          data: today,
-          horarioInicio: '09:00',
-          horarioFim: '09:30',
-          duracaoMinutos: 30,
-          status: 'em_atendimento',
-          valor: 35.0,
-          dataCriacao: new Date().toISOString(),
-        },
-        {
-          id: 'agend-3',
-          clienteId: 'cli-lucas',
-          clienteNome: 'Lucas Ferreira',
-          clienteTelefone: '(11) 98888-7777',
-          barbeiroId: 'barb-carlos',
-          barbeiroNome: 'Carlos Silva',
-          servicoId: 'serv-corte-barba',
-          servicoNome: 'Corte + Barba',
-          data: today,
-          horarioInicio: '10:00',
-          horarioFim: '11:00',
-          duracaoMinutos: 60,
-          status: 'agendado',
-          valor: 70.0,
-          dataCriacao: new Date().toISOString(),
-        },
-        {
-          id: 'agend-4',
-          clienteId: 'cli-rafael',
-          clienteNome: 'Rafael Oliveira',
-          clienteTelefone: '(11) 97777-6666',
-          barbeiroId: 'barb-carlos',
-          barbeiroNome: 'Carlos Silva',
-          servicoId: 'serv-corte',
-          servicoNome: 'Corte de cabelo',
-          data: today,
-          horarioInicio: '11:00',
-          horarioFim: '11:30',
-          duracaoMinutos: 30,
-          status: 'agendado',
-          valor: 50.0,
-          dataCriacao: new Date().toISOString(),
-        },
-      ];
+    // Purge any remnant mock/test data from Firestore so the app runs in clean production mode
+    await purgeAllTestData();
+  } catch (err) {
+    console.error('Error during initial Firestore setup:', err);
+  }
+}
 
+/**
+ * Purges all mock/test records from Firestore to ensure a completely clean environment for production run.
+ */
+export async function purgeAllTestData(): Promise<void> {
+  try {
+    // 1. Delete all test appointments
+    const agendamentosSnap = await getDocs(collection(db, 'agendamentos'));
+    if (!agendamentosSnap.empty) {
       const batch = writeBatch(db);
-      for (const ag of sampleAgendamentos) {
-        batch.set(doc(db, 'agendamentos', ag.id), ag);
+      let count = 0;
+      for (const docSnap of agendamentosSnap.docs) {
+        const id = docSnap.id;
+        const data = docSnap.data();
+        const isTestId = ['agend-1', 'agend-2', 'agend-3', 'agend-4'].includes(id);
+        const isTestClient =
+          data.clienteNome === 'João Silva' ||
+          data.clienteNome === 'Pedro Santos' ||
+          data.clienteNome === 'Lucas Ferreira' ||
+          data.clienteNome === 'Rafael Oliveira';
+        
+        if (isTestId || isTestClient) {
+          batch.delete(docSnap.ref);
+          count++;
+        }
       }
-      await batch.commit();
+      if (count > 0) {
+        await batch.commit();
+        console.log(`[Clean Mode] Removidos ${count} agendamentos de teste do Firestore.`);
+      }
+    }
+
+    // 2. Delete test administrators (e.g. admin-matriz-1, admin-jardins-1)
+    const adminsSnap = await getDocs(collection(db, 'administradores_barbearia'));
+    if (!adminsSnap.empty) {
+      const batch = writeBatch(db);
+      let count = 0;
+      for (const docSnap of adminsSnap.docs) {
+        if (['admin-matriz-1', 'admin-jardins-1'].includes(docSnap.id)) {
+          batch.delete(docSnap.ref);
+          count++;
+        }
+      }
+      if (count > 0) {
+        await batch.commit();
+        console.log(`[Clean Mode] Removidos administradores de teste.`);
+      }
+    }
+
+    // 3. Delete extra mock units (e.g. unidade-jardins, unidade-morumbi)
+    const unitsSnap = await getDocs(collection(db, 'barbearias'));
+    if (!unitsSnap.empty) {
+      const batch = writeBatch(db);
+      let count = 0;
+      for (const docSnap of unitsSnap.docs) {
+        if (['unidade-jardins', 'unidade-morumbi'].includes(docSnap.id)) {
+          batch.delete(docSnap.ref);
+          count++;
+        }
+      }
+      if (count > 0) {
+        await batch.commit();
+        console.log(`[Clean Mode] Removidas unidades de teste.`);
+      }
     }
   } catch (err) {
-    console.error('Error during initial Firestore seeding:', err);
+    console.error('Erro ao purgar dados de teste:', err);
   }
 }

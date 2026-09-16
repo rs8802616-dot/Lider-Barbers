@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { Barbeiro, Servico, Agendamento, AppointmentStatus } from '../../types';
 import { doc, updateDoc, setDoc, addDoc, collection, deleteDoc } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { db, purgeAllTestData } from '../../firebase/config';
 import { sendNotification } from '../../services/notificationService';
 import { CopyBarberLinkButton } from '../common/CopyBarberLinkButton';
 import { ShareLinksCard } from '../common/ShareLinksCard';
@@ -135,10 +135,10 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   const [broadcastSent, setBroadcastSent] = useState<boolean>(false);
 
   // Calculate Metrics from Real Firestore Data
-  const totalAgendamentos = agendamentos.length || 48;
-  const faturamentoTotal = agendamentos.reduce((acc, curr) => (curr.status !== 'cancelado' ? acc + curr.valor : acc), 0) || 3240;
+  const totalAgendamentos = agendamentos.length;
+  const faturamentoTotal = agendamentos.reduce((acc, curr) => (curr.status !== 'cancelado' ? acc + curr.valor : acc), 0);
   const barbeirosAtivos = barbeiros.filter((b) => b.status === 'ativo').length;
-  const uniqueClients = new Set(agendamentos.map((a) => a.clienteId)).size || 36;
+  const uniqueClients = new Set(agendamentos.map((a) => a.clienteId)).size;
 
   // Toggle Barber Status
   const handleToggleBarberStatus = async (barber: Barbeiro) => {
@@ -230,6 +230,26 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
     setTimeout(() => setBroadcastSent(false), 2500);
   };
 
+  const [isPurging, setIsPurging] = useState(false);
+  const [purgeFeedback, setPurgeFeedback] = useState<string | null>(null);
+
+  const handlePurgeAllTestRecords = async () => {
+    if (!window.confirm('Deseja limpar todos os agendamentos e registros de teste? Os agendamentos do sistema serão zerados para você iniciar suas operações reais.')) {
+      return;
+    }
+    try {
+      setIsPurging(true);
+      await purgeAllTestData();
+      onRefreshData();
+      setPurgeFeedback('Agendamentos de teste apagados com sucesso! O sistema está zerado e pronto.');
+      setTimeout(() => setPurgeFeedback(null), 4000);
+    } catch (err) {
+      console.error('Erro ao purgar dados:', err);
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   // Filtered appointments
   const filteredAppointments = agendamentos.filter((ag) => {
     if (statusFilter !== 'todos' && ag.status !== statusFilter) return false;
@@ -277,6 +297,19 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
 
         {/* Action Controls & Tab Switcher Buttons */}
         <div className="flex items-center gap-2 w-full lg:w-auto">
+          {/* Botão Zerar Agendamentos de Teste */}
+          <button
+            type="button"
+            disabled={isPurging}
+            onClick={handlePurgeAllTestRecords}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all shadow-sm whitespace-nowrap shrink-0 disabled:opacity-50"
+            title="Apagar agendamentos de teste do banco de dados"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden sm:inline">{isPurging ? 'Limpando...' : 'Zerar Testes'}</span>
+            <span className="sm:hidden">Zerar</span>
+          </button>
+
           {/* Botão Voltar para a Loja Limpa (Clientes) */}
           {onExitToStore && (
             <button
@@ -364,6 +397,13 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
         </div>
       </div>
 
+      {purgeFeedback && (
+        <div className="p-3.5 mb-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in">
+          <Check className="w-4 h-4 shrink-0 text-emerald-400" />
+          <span>{purgeFeedback}</span>
+        </div>
+      )}
+
       {/* VIEW: DASHBOARD */}
       {activeTab === 'dashboard' && (
         <div className="space-y-5 animate-in fade-in">
@@ -380,26 +420,26 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Total de agendamentos */}
             <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-1">
-              <span className="text-[11px] text-zinc-400">Total de agendamentos (mês)</span>
+              <span className="text-[11px] text-zinc-400">Total de agendamentos</span>
               <div className="flex items-baseline justify-between">
                 <span className="text-2xl font-bold text-zinc-100 font-display">
                   {totalAgendamentos}
                 </span>
-                <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-0.5">
-                  <TrendingUp className="w-3 h-3" /> +12% este mês
+                <span className="text-[10px] font-semibold text-zinc-400 flex items-center gap-0.5">
+                  Tempo real
                 </span>
               </div>
             </div>
 
             {/* Clientes ativos */}
             <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-1">
-              <span className="text-[11px] text-zinc-400">Clientes ativos</span>
+              <span className="text-[11px] text-zinc-400">Clientes atendidos</span>
               <div className="flex items-baseline justify-between">
                 <span className="text-2xl font-bold text-zinc-100 font-display">
                   {uniqueClients}
                 </span>
-                <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-0.5">
-                  <TrendingUp className="w-3 h-3" /> +8% este mês
+                <span className="text-[10px] font-semibold text-zinc-400 flex items-center gap-0.5">
+                  Clientes únicos
                 </span>
               </div>
             </div>
@@ -412,20 +452,20 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                   {barbeirosAtivos}
                 </span>
                 <span className="text-[10px] font-semibold text-[#D4AF37]">
-                  100% da equipe
+                  {barbeiros.length} equipe
                 </span>
               </div>
             </div>
 
             {/* Faturamento */}
             <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-1">
-              <span className="text-[11px] text-zinc-400">Faturamento (mês)</span>
+              <span className="text-[11px] text-zinc-400">Faturamento total</span>
               <div className="flex items-baseline justify-between">
                 <span className="text-xl font-bold text-[#D4AF37] font-display">
-                  R$ {faturamentoTotal.toLocaleString('pt-BR')}
+                  R$ {faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-0.5">
-                  <TrendingUp className="w-3 h-3" /> +15% este mês
+                  Confirmados
                 </span>
               </div>
             </div>

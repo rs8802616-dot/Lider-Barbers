@@ -75,11 +75,15 @@ export default function App() {
   const [disponibilidades, setDisponibilidades] = useState<Disponibilidade[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Active simulated user profiles based on role
+  // Dynamic client profile from localStorage or empty clean state
+  const savedClientName = typeof window !== 'undefined' ? localStorage.getItem('lider_client_nome') : null;
+  const savedClientPhone = typeof window !== 'undefined' ? localStorage.getItem('lider_client_telefone') : null;
+  const savedClientId = typeof window !== 'undefined' ? localStorage.getItem('lider_client_id') : null;
+
   const clientUser: UserProfile = {
-    id: 'cli-joao',
-    nome: 'João Silva',
-    telefone: '(11) 98765-4321',
+    id: savedClientId || 'cli-user',
+    nome: savedClientName || '',
+    telefone: savedClientPhone || '',
     role: 'cliente',
     status: 'ativo',
     dataCriacao: new Date().toISOString(),
