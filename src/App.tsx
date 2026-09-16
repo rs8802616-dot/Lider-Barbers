@@ -34,6 +34,13 @@ export default function App() {
   // Active role: 'cliente' | 'barbeiro' | 'administrador' | 'super_admin'
   const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
 
+  // Selected Barber ID for Direct Invite link / Client preference
+  const [invitedBarberId, setInvitedBarberId] = useState<string | null>(null);
+  const [initialClientTab, setInitialClientTab] = useState<'home' | 'agendar' | 'agendamentos' | 'perfil'>('home');
+
+  // Currently logged-in / active barber for BarberModule (supports switching if multiple barbers or admin is also a barber)
+  const [activeBarberId, setActiveBarberId] = useState<string>('barb-carlos');
+
   // Authenticated roles tracker to ensure clientes cannot leak into barber, admin, or master views
   const [unlockedRoles, setUnlockedRoles] = useState<{
     barbeiro: boolean;
@@ -76,7 +83,71 @@ export default function App() {
     dataCriacao: new Date().toISOString(),
   };
 
-  const barberUser = barbeiros.find((b) => b.id === 'barb-carlos') || barbeiros[0];
+  const barberUser = barbeiros.find((b) => b.id === activeBarberId) || barbeiros[0];
+
+  // Route Dispatcher: handles /b/:slug, /barbeiro/:slug, /super-admin, /admin, /cliente, /agendar
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const pathname = window.location.pathname.toLowerCase();
+
+      // 1. Direct Barber Link: /b/:slug or /barbeiro/:slug
+      const bMatch = pathname.match(/^\/b\/(.+)$/) || pathname.match(/^\/barbeiro\/(.+)$/);
+      if (bMatch && bMatch[1]) {
+        const slugOrId = decodeURIComponent(bMatch[1]).trim().toLowerCase();
+        // Find matching barber by slug or by ID
+        const matchedBarber = barbeiros.find(
+          (b) =>
+            (b.slug && b.slug.toLowerCase() === slugOrId) ||
+            b.id.toLowerCase() === slugOrId ||
+            b.nome.toLowerCase().replace(/\s+/g, '-') === slugOrId
+        );
+
+        if (matchedBarber) {
+          setInvitedBarberId(matchedBarber.id);
+          localStorage.setItem('lider_prefered_barber_id', matchedBarber.id);
+          setInitialClientTab('agendar');
+          setCurrentRole('cliente');
+        }
+        return;
+      }
+
+      // 2. Super Admin route: /super-admin or /master
+      if (pathname === '/super-admin' || pathname === '/master') {
+        if (unlockedRoles.super_admin) {
+          setCurrentRole('super_admin');
+        } else {
+          setAuthModalState({ isOpen: true, targetRole: 'super_admin' });
+        }
+        return;
+      }
+
+      // 3. Admin route: /admin or /administrador
+      if (pathname === '/admin' || pathname === '/administrador') {
+        if (unlockedRoles.administrador) {
+          setCurrentRole('administrador');
+        } else {
+          setAuthModalState({ isOpen: true, targetRole: 'administrador' });
+        }
+        return;
+      }
+
+      // 4. Client booking direct route: /agendar
+      if (pathname === '/agendar') {
+        setInitialClientTab('agendar');
+        setCurrentRole('cliente');
+        return;
+      }
+
+      // 5. Default client: / or /cliente
+      if (pathname === '/cliente' || pathname === '/') {
+        setCurrentRole('cliente');
+      }
+    };
+
+    handleLocationChange();
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, [barbeiros, unlockedRoles]);
 
   // Bootstrap Firebase & Seed Data
   useEffect(() => {
@@ -218,6 +289,8 @@ export default function App() {
               agendamentos={agendamentos}
               onRefreshData={handleRefresh}
               onOpenStaffLogin={() => setAuthModalState({ isOpen: true, targetRole: 'barbeiro' })}
+              initialBarberId={invitedBarberId}
+              initialTab={initialClientTab}
             />
           )}
 
@@ -228,6 +301,13 @@ export default function App() {
               servicos={servicos}
               disponibilidade={disponibilidades.find((d) => d.barbeiroId === barberUser.id)}
               onRefreshData={handleRefresh}
+              onSwitchToAdmin={() => {
+                if (unlockedRoles.administrador) {
+                  setCurrentRole('administrador');
+                } else {
+                  setAuthModalState({ isOpen: true, targetRole: 'administrador' });
+                }
+              }}
             />
           )}
 
@@ -237,6 +317,11 @@ export default function App() {
               servicos={servicos}
               agendamentos={agendamentos}
               onRefreshData={handleRefresh}
+              onSwitchToBarber={(barberId) => {
+                setActiveBarberId(barberId);
+                setUnlockedRoles((prev) => ({ ...prev, barbeiro: true }));
+                setCurrentRole('barbeiro');
+              }}
             />
           )}
 

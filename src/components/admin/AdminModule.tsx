@@ -25,12 +25,14 @@ import { Barbeiro, Servico, Agendamento, AppointmentStatus } from '../../types';
 import { doc, updateDoc, setDoc, addDoc, collection, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { sendNotification } from '../../services/notificationService';
+import { CopyBarberLinkButton } from '../common/CopyBarberLinkButton';
 
 interface AdminModuleProps {
   barbeiros: Barbeiro[];
   servicos: Servico[];
   agendamentos: Agendamento[];
   onRefreshData: () => void;
+  onSwitchToBarber?: (barberId: string) => void;
 }
 
 export const AdminModule: React.FC<AdminModuleProps> = ({
@@ -38,6 +40,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   servicos,
   agendamentos,
   onRefreshData,
+  onSwitchToBarber,
 }) => {
   // Navigation tabs: 'dashboard' | 'barbeiros' | 'servicos' | 'agendamentos' | 'configuracoes'
   const [activeTab, setActiveTab] = useState<'dashboard' | 'barbeiros' | 'servicos' | 'agendamentos' | 'configuracoes'>('dashboard');
@@ -150,76 +153,114 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   return (
     <div className="flex flex-col min-h-[620px] bg-[#121212] text-zinc-100 pb-16">
       {/* Top Admin Navigation Header */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-[#1A1A1E] via-[#161619] to-[#121214] border border-zinc-800 flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-[#D4AF37] flex items-center justify-center text-[#D4AF37]">
-            <Shield className="w-5 h-5" />
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#1A1A1E] via-[#161619] to-[#121214] border border-zinc-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-[#D4AF37] flex items-center justify-center text-[#D4AF37] shrink-0">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-bold text-zinc-100 font-display">
+                  Líder Barbers
+                </h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30 whitespace-nowrap">
+                  Painel Admin
+                </span>
+              </div>
+              <p className="text-xs text-[#C5A059] font-medium">Gestão Geral da Barbearia</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-zinc-100 font-display">
-              Líder Barbers
-            </h3>
-            <p className="text-xs text-[#C5A059] font-medium">Painel Administrativo Geral</p>
-          </div>
+
+          {/* Alternar para modo Barbeiro em mobile */}
+          {onSwitchToBarber && (
+            <div className="lg:hidden">
+              <button
+                type="button"
+                onClick={() => onSwitchToBarber('barb-carlos')}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/35 hover:bg-[#D4AF37]/25 text-xs font-bold transition-all shadow-sm whitespace-nowrap"
+                title="Alternar para Minha Agenda de Barbeiro (Carlos Silva)"
+              >
+                <Scissors className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span className="hidden sm:inline">Modo Barbeiro (Carlos)</span>
+                <span className="sm:hidden">Barbeiro</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Tab Switcher Buttons */}
-        <div className="flex items-center gap-1 overflow-x-auto text-xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              activeTab === 'dashboard'
-                ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
-                : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Dashboard
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('barbeiros')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              activeTab === 'barbeiros'
-                ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
-                : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Barbeiros
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('servicos')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              activeTab === 'servicos'
-                ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
-                : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Serviços
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('agendamentos')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              activeTab === 'agendamentos'
-                ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
-                : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Agendamentos
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('configuracoes')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              activeTab === 'configuracoes'
-                ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
-                : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Configurações
-          </button>
+        {/* Action Controls & Tab Switcher Buttons */}
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+          {/* Alternar para modo Barbeiro em telas maiores */}
+          {onSwitchToBarber && (
+            <button
+              type="button"
+              onClick={() => onSwitchToBarber('barb-carlos')}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/35 hover:bg-[#D4AF37]/25 text-xs font-bold transition-all shadow-sm whitespace-nowrap shrink-0"
+              title="Alternar para Minha Agenda de Barbeiro (Carlos Silva)"
+            >
+              <Scissors className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>Modo Barbeiro (Carlos)</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-1 overflow-x-auto text-xs w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setActiveTab('dashboard')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                activeTab === 'dashboard'
+                  ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('barbeiros')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                activeTab === 'barbeiros'
+                  ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Barbeiros
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('servicos')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                activeTab === 'servicos'
+                  ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Serviços
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('agendamentos')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                activeTab === 'agendamentos'
+                  ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Agendamentos
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('configuracoes')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                activeTab === 'configuracoes'
+                  ? 'bg-[#D4AF37] text-zinc-950 font-semibold shadow-sm'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Configurações
+            </button>
+          </div>
         </div>
       </div>
 
@@ -375,7 +416,25 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                    <CopyBarberLinkButton
+                      barberId={barb.id}
+                      barberSlug={barb.slug}
+                      barberName={barb.nome}
+                      className="text-[11px]"
+                    />
+
+                    {barb.isAdmin && onSwitchToBarber && (
+                      <button
+                        type="button"
+                        onClick={() => onSwitchToBarber(barb.id)}
+                        className="text-[10px] font-bold px-2 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30 transition-all"
+                        title="Abrir agenda deste barbeiro"
+                      >
+                        Abrir Agenda
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => handleToggleBarberStatus(barb)}

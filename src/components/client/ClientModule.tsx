@@ -35,6 +35,8 @@ interface ClientModuleProps {
   agendamentos: Agendamento[];
   onRefreshData: () => void;
   onOpenStaffLogin?: () => void;
+  initialBarberId?: string | null;
+  initialTab?: 'home' | 'agendar' | 'agendamentos' | 'perfil';
 }
 
 export const ClientModule: React.FC<ClientModuleProps> = ({
@@ -44,14 +46,52 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
   agendamentos,
   onRefreshData,
   onOpenStaffLogin,
+  initialBarberId,
+  initialTab = 'home',
 }) => {
   // Navigation tabs: 'home' | 'agendar' | 'agendamentos' | 'perfil'
-  const [activeTab, setActiveTab] = useState<'home' | 'agendar' | 'agendamentos' | 'perfil'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'agendar' | 'agendamentos' | 'perfil'>(initialTab);
 
   // Wizard steps: 1 = Servico, 2 = Barbeiro, 3 = Data e Horário, 4 = Confirmar
-  const [wizardStep, setWizardStep] = useState<number>(1);
+  // Se veio por link direto do barbeiro, inicia no passo 1 (Serviço) ou 3 (Data) com o barbeiro já selecionado
+  const [wizardStep, setWizardStep] = useState<number>(initialBarberId ? 1 : 1);
   const [selectedServicoId, setSelectedServicoId] = useState<string>('serv-corte');
-  const [selectedBarbeiroId, setSelectedBarbeiroId] = useState<string>('barb-carlos');
+  const [selectedBarbeiroId, setSelectedBarbeiroId] = useState<string>(() => {
+    if (initialBarberId && barbeiros.some((b) => b.id === initialBarberId)) {
+      return initialBarberId;
+    }
+    const saved = localStorage.getItem('lider_prefered_barber_id');
+    if (saved && barbeiros.some((b) => b.id === saved)) {
+      return saved;
+    }
+    return 'barb-carlos';
+  });
+
+  // Track if user arrived through direct barber invitation link
+  const [invitedBarber, setInvitedBarber] = useState<Barbeiro | null>(() => {
+    if (initialBarberId) {
+      return barbeiros.find((b) => b.id === initialBarberId) || null;
+    }
+    return null;
+  });
+
+  // Update selection if initialBarberId changes
+  useEffect(() => {
+    if (initialBarberId) {
+      const found = barbeiros.find((b) => b.id === initialBarberId);
+      if (found) {
+        setSelectedBarbeiroId(found.id);
+        setInvitedBarber(found);
+        localStorage.setItem('lider_prefered_barber_id', found.id);
+      }
+    }
+  }, [initialBarberId, barbeiros]);
+
+  // Save selected barber preference whenever it changes
+  const handleSelectBarber = (barberId: string) => {
+    setSelectedBarbeiroId(barberId);
+    localStorage.setItem('lider_prefered_barber_id', barberId);
+  };
 
   // Date selection (default today or tomorrow)
   const todayStr = new Date().toISOString().split('T')[0];
@@ -341,6 +381,53 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
             </p>
           </div>
 
+          {/* Banner de Acesso por Link Personalizado do Barbeiro */}
+          {invitedBarber && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-[#D4AF37]/15 via-zinc-900 to-[#18181c] border border-[#D4AF37]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-3">
+                <img
+                  src={invitedBarber.foto}
+                  alt={invitedBarber.nome}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-[#D4AF37] shrink-0"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] font-bold uppercase tracking-wider border border-[#D4AF37]/30">
+                      Link de Convite
+                    </span>
+                    <span className="text-xs text-zinc-400">Atendimento Exclusivo</span>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-100 font-display mt-0.5">
+                    Você acessou o link de {invitedBarber.nome}
+                  </h3>
+                  <p className="text-xs text-zinc-400">{invitedBarber.especialidade}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSelectBarber(invitedBarber.id);
+                    setWizardStep(1);
+                    setActiveTab('agendar');
+                  }}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 font-bold text-xs hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-[#D4AF37]/20"
+                >
+                  Agendar com {invitedBarber.nome.split(' ')[0]}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInvitedBarber(null)}
+                  className="px-3 py-2 rounded-xl border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs transition-colors"
+                  title="Ver todos os barbeiros"
+                >
+                  Outro
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Hero Banner Card */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1C1C21] via-[#161619] to-[#0E0E10] border border-zinc-800/90 p-5 sm:p-8 shadow-xl">
             <div className="absolute -right-8 -bottom-8 w-60 h-60 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
@@ -568,7 +655,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
                   return (
                     <div
                       key={barb.id}
-                      onClick={() => setSelectedBarbeiroId(barb.id)}
+                      onClick={() => handleSelectBarber(barb.id)}
                       className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                         isSelected
                           ? 'bg-[#1e1e24] border-[#D4AF37] ring-1 ring-[#D4AF37]'
@@ -624,6 +711,39 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
           {/* STEP 3: DATA E HORÁRIO */}
           {wizardStep === 3 && (
             <div className="space-y-4">
+              {/* Selected Barber Header Card with Option to Change Barber */}
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-zinc-900 via-[#18181c] to-zinc-900 border border-[#D4AF37]/30 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={selectedBarbeiro.foto}
+                    alt={selectedBarbeiro.nome}
+                    className="w-11 h-11 rounded-full object-cover border-2 border-[#D4AF37]"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-zinc-100 font-display">
+                        Atendimento com {selectedBarbeiro.nome}
+                      </span>
+                      {invitedBarber?.id === selectedBarbeiro.id && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 font-semibold">
+                          Link Exclusivo
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-[#C5A059]">{selectedBarbeiro.especialidade}</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setWizardStep(2)}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700/80 text-zinc-300 hover:text-white text-xs font-medium transition-all"
+                  title="Clique para escolher outro profissional se preferir"
+                >
+                  Trocar barbeiro
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 {/* Interactive Calendar on Left */}
                 <div>

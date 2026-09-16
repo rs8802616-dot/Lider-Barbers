@@ -108,11 +108,11 @@ export const CopyBarberLinkButton: React.FC<CopyBarberLinkButtonProps> = ({
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block shrink-0">
       <button
         type="button"
         onClick={handleCopy}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.98] shadow-sm ${
+        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.98] shadow-sm whitespace-nowrap ${
           copied
             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
             : 'bg-gradient-to-r from-[#D4AF37]/20 to-[#B38F2E]/20 text-[#D4AF37] border border-[#D4AF37]/40 hover:bg-[#D4AF37]/30'
@@ -127,7 +127,8 @@ export const CopyBarberLinkButton: React.FC<CopyBarberLinkButtonProps> = ({
         ) : (
           <>
             <Copy className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>Copiar Meu Link</span>
+            <span className="hidden sm:inline">Copiar Meu Link</span>
+            <span className="sm:hidden">Meu Link</span>
           </>
         )}
       </button>

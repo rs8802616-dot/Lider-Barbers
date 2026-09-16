@@ -22,6 +22,7 @@ import {
   ArrowUpRight,
   Award,
   Filter,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   Barbeiro,
@@ -33,6 +34,7 @@ import {
 import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { sendNotification } from '../../services/notificationService';
+import { CopyBarberLinkButton } from '../common/CopyBarberLinkButton';
 
 interface BarberModuleProps {
   currentBarber: Barbeiro;
@@ -40,6 +42,7 @@ interface BarberModuleProps {
   servicos: Servico[];
   disponibilidade?: Disponibilidade;
   onRefreshData: () => void;
+  onSwitchToAdmin?: () => void;
 }
 
 export const BarberModule: React.FC<BarberModuleProps> = ({
@@ -48,6 +51,7 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
   servicos,
   disponibilidade,
   onRefreshData,
+  onSwitchToAdmin,
 }) => {
   // Navigation: 'agenda' | 'clientes' | 'disponibilidade' | 'faturamento'
   const [activeScreen, setActiveScreen] = useState<'agenda' | 'clientes' | 'disponibilidade' | 'faturamento'>('agenda');
@@ -173,28 +177,58 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
   return (
     <div className="flex flex-col min-h-[620px] bg-[#121212] text-zinc-100 pb-16">
       {/* Barber Profile Header Card as in Mockup */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-[#1A1A1E] via-[#161619] to-[#121214] border border-zinc-800 flex items-center justify-between gap-4 mb-4">
-        <div className="flex items-center gap-3">
-          <img
-            src={currentBarber.foto}
-            alt={currentBarber.nome}
-            className="w-12 h-12 rounded-full object-cover border-2 border-[#D4AF37]"
-          />
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base font-bold text-zinc-100 font-display">
-                {currentBarber.nome}
-              </h3>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] font-semibold border border-[#D4AF37]/30">
-                Barbeiro
-              </span>
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#1A1A1E] via-[#161619] to-[#121214] border border-zinc-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full lg:w-auto">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src={currentBarber.foto}
+              alt={currentBarber.nome}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-[#D4AF37] shrink-0"
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-base font-bold text-zinc-100 font-display truncate">
+                  {currentBarber.nome}
+                </h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] font-semibold border border-[#D4AF37]/30 whitespace-nowrap">
+                  Barbeiro
+                </span>
+                {currentBarber.isAdmin && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30 flex items-center gap-1 whitespace-nowrap">
+                    <ShieldAlert className="w-2.5 h-2.5" />
+                    Admin
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-zinc-400 truncate">{currentBarber.especialidade}</p>
             </div>
-            <p className="text-xs text-zinc-400">{currentBarber.especialidade}</p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Botão Copiar Meu Link de Atendimento */}
+            <CopyBarberLinkButton
+              barberId={currentBarber.id}
+              barberSlug={currentBarber.slug}
+              barberName={currentBarber.nome}
+            />
+
+            {/* Alternador Rápido de Papel: Admin que atende como Barbeiro */}
+            {currentBarber.isAdmin && onSwitchToAdmin && (
+              <button
+                type="button"
+                onClick={onSwitchToAdmin}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-all text-xs font-semibold whitespace-nowrap"
+                title="Alternar para o Painel Geral de Administração da Barbearia"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span>Painel Admin</span>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Quick Tabs Menu */}
-        <div className="flex items-center gap-1 overflow-x-auto text-xs">
+        <div className="flex items-center gap-1 overflow-x-auto text-xs w-full lg:w-auto pb-1 lg:pb-0 scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveScreen('agenda')}

@@ -96,6 +96,23 @@
 - Rebranding completo para **Líder Barbers** com tipografia Cinzel e Montserrat.
 - Integração de notificações Web Push reais e sincronização de dados via Firebase Firestore.
 
+### Versão 1.4 (Links Personalizados de Barbeiro, Roteamento Dinâmico & Flexibilidade Admin-Barbeiro)
+- **Links Exclusivos por Barbeiro (`/b/:slug` ou `/barbeiro/:slug`):**
+  - Cada barbeiro possui um slug exclusivo (ex: `carlos-machado`, `marcos-vinicius`, `diego-santos`).
+  - Implementado o botão `CopyBarberLinkButton` nos cards de barbeiro do Admin e no painel do Barbeiro, permitindo copiar o link direto com 1 clique (com fallback seguro e feedback visual via toast/tooltip).
+  - Roteamento dinâmico no `App.tsx` que detecta a URL `/b/:slug`, identifica o profissional correspondente no Firestore e redireciona o cliente para o fluxo de agendamento com aquele barbeiro pré-selecionado.
+  - O cliente visualiza um banner de destaque ("Você acessou o link exclusivo de [Nome]") e pode, a qualquer momento, clicar no botão **"Trocar barbeiro"** para escolher outro profissional caso queira.
+- **Permissões Flexíveis (Administrador que também atende como Barbeiro):**
+  - O modelo de dados `Barbeiro` agora suporta os atributos `slug`, `email` e `isAdmin: boolean`.
+  - Barbeiros com perfil de Admin possuem no seu painel o botão de alternância rápida **"Modo Administrador"**.
+  - No módulo do Administrador (`AdminModule.tsx`), o gestor que também atende possui o botão **"Abrir Minha Agenda"** / **"Modo Barbeiro"**, alternando de forma fluida entre a visão de gestão da barbearia e a sua agenda de atendimento sem deslogar ou vazar a visão do cliente.
+- **Roteamento Limpo e Direto da Aplicação:**
+  - `/` ou `/cliente`: Visão padrão do cliente.
+  - `/b/:slug` ou `/barbeiro/:slug`: Agendamento direto com o barbeiro específico.
+  - `/agendar`: Abertura imediata do fluxo de agendamento.
+  - `/admin`: Acesso ao painel administrativo da barbearia (com senha).
+  - `/super-admin` ou `/master`: Acesso ao painel do dono do app (com senha).
+
 ---
 
 ## 6. Diretrizes para Próximas Alterações
