@@ -69,8 +69,8 @@ export default function App() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   // Core Data States
-  const [barbeiros, setBarbeiros] = useState<Barbeiro[]>(DEFAULT_BARBEIROS);
-  const [servicos, setServicos] = useState<Servico[]>(DEFAULT_SERVICOS);
+  const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
+  const [servicos, setServicos] = useState<Servico[]>([]);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [disponibilidades, setDisponibilidades] = useState<Disponibilidade[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -89,7 +89,7 @@ export default function App() {
     dataCriacao: new Date().toISOString(),
   };
 
-  const barberUser = barbeiros.find((b) => b.id === activeBarberId) || barbeiros[0];
+  const barberUser = barbeiros.find((b) => b.id === activeBarberId) || barbeiros[0] || null;
 
   // Route Dispatcher: handles Query Params (?admin=ID, ?barbeiro=ID, ?master=1, ?chave=...), hashes (#/admin, etc.), and clean routes
   useEffect(() => {
@@ -243,17 +243,13 @@ export default function App() {
 
     // 4. Firestore Real-Time Subscriptions
     const unsubServicos = onSnapshot(collection(db, 'servicos'), (snap) => {
-      if (!snap.empty) {
-        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Servico));
-        setServicos(list);
-      }
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Servico));
+      setServicos(list);
     });
 
     const unsubBarbeiros = onSnapshot(collection(db, 'barbeiros'), (snap) => {
-      if (!snap.empty) {
-        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Barbeiro));
-        setBarbeiros(list);
-      }
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Barbeiro));
+      setBarbeiros(list);
     });
 
     const unsubAgendamentos = onSnapshot(
@@ -422,7 +418,7 @@ export default function App() {
               currentBarber={barberUser}
               agendamentos={agendamentos}
               servicos={servicos}
-              disponibilidade={disponibilidades.find((d) => d.barbeiroId === barberUser.id)}
+              disponibilidade={barberUser ? disponibilidades.find((d) => d.barbeiroId === barberUser.id) : undefined}
               onRefreshData={handleRefresh}
               onExitToStore={handleLogoutToClient}
               onSwitchToAdmin={() => {

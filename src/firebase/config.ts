@@ -35,105 +35,9 @@ export async function ensureAnonymousAuth() {
   }
 }
 
-// Seed data based on the PRD and mockup screenshot
-export const DEFAULT_SERVICOS: Servico[] = [
-  {
-    id: 'serv-corte',
-    nome: 'Corte de cabelo',
-    descricao: 'Corte tradicional ou moderno com acabamento impecável na tesoura e máquina.',
-    preco: 50.0,
-    duracaoMinutos: 30,
-    status: 'ativo',
-    icone: 'scissors',
-  },
-  {
-    id: 'serv-barba',
-    nome: 'Barba',
-    descricao: 'Modelagem completa da barba com toalha quente, navalhete e óleo hidratante.',
-    preco: 35.0,
-    duracaoMinutos: 30,
-    status: 'ativo',
-    icone: 'sparkles',
-  },
-  {
-    id: 'serv-corte-barba',
-    nome: 'Corte + Barba',
-    descricao: 'Combo completo de corte estilizado e barba alinhada com toalha quente.',
-    preco: 70.0,
-    duracaoMinutos: 60,
-    status: 'ativo',
-    icone: 'crown',
-  },
-  {
-    id: 'serv-pezinho',
-    nome: 'Pezinho',
-    descricao: 'Alinhamento dos contornos do cabelo e nuca com navalha.',
-    preco: 20.0,
-    duracaoMinutos: 20,
-    status: 'ativo',
-    icone: 'check',
-  },
-  {
-    id: 'serv-sobrancelha',
-    nome: 'Sobrancelha',
-    descricao: 'Design e limpeza das sobrancelhas masculinas na navalha ou pinça.',
-    preco: 15.0,
-    duracaoMinutos: 15,
-    status: 'ativo',
-    icone: 'eye',
-  },
-];
-
-export const DEFAULT_BARBEIROS: Barbeiro[] = [
-  {
-    id: 'barb-carlos',
-    nome: 'Carlos Silva',
-    slug: 'carlos-silva',
-    foto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-    especialidade: 'Especialista em cortes (Sócio/Admin)',
-    descricao: 'Mais de 10 anos de experiência em cortes clássicos, sócio proprietário e gestor da unidade.',
-    servicosIds: ['serv-corte', 'serv-barba', 'serv-corte-barba', 'serv-pezinho', 'serv-sobrancelha'],
-    status: 'ativo',
-    telefone: '(11) 98765-4321',
-    email: 'carlos.admin@liderbarbers.com.br',
-    pin: 'barber123',
-    isAdmin: true, // Carlos atua como Barbeiro E também é Administrador da barbearia!
-    avaliacao: 4.9,
-    dataCriacao: new Date().toISOString(),
-  },
-  {
-    id: 'barb-rafael',
-    nome: 'Rafael Costa',
-    slug: 'rafael-costa',
-    foto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-    especialidade: 'Barba e estilo',
-    descricao: 'Mestre em barboterapia, alinhamento de barba e visagismo masculino.',
-    servicosIds: ['serv-corte', 'serv-barba', 'serv-corte-barba', 'serv-pezinho'],
-    status: 'ativo',
-    telefone: '(11) 97654-3210',
-    email: 'rafael.barber@liderbarbers.com.br',
-    pin: 'barber123',
-    isAdmin: false,
-    avaliacao: 4.8,
-    dataCriacao: new Date().toISOString(),
-  },
-  {
-    id: 'barb-lucas',
-    nome: 'Lucas Mendes',
-    slug: 'lucas-mendes',
-    foto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80',
-    especialidade: 'Cortes modernos',
-    descricao: 'Especialista em degrade navalhado, freestyle, texturização e tendências urbanas.',
-    servicosIds: ['serv-corte', 'serv-corte-barba', 'serv-pezinho', 'serv-sobrancelha'],
-    status: 'ativo',
-    telefone: '(11) 96543-2109',
-    email: 'lucas.barber@liderbarbers.com.br',
-    pin: 'barber123',
-    isAdmin: false,
-    avaliacao: 4.9,
-    dataCriacao: new Date().toISOString(),
-  },
-];
+// Empty initial data collections for pure production state
+export const DEFAULT_SERVICOS: Servico[] = [];
+export const DEFAULT_BARBEIROS: Barbeiro[] = [];
 
 export async function testConnection() {
   try {
@@ -149,48 +53,8 @@ export async function testConnection() {
 export async function seedInitialDataIfNeeded() {
   try {
     await ensureAnonymousAuth();
-    const servicosSnap = await getDocs(collection(db, 'servicos'));
-    if (servicosSnap.empty) {
-      console.log('Seeding initial servicos into Firestore...');
-      const batch = writeBatch(db);
-      for (const serv of DEFAULT_SERVICOS) {
-        batch.set(doc(db, 'servicos', serv.id), serv);
-      }
-      await batch.commit();
-    }
-
-    const barbeirosSnap = await getDocs(collection(db, 'barbeiros'));
-    if (barbeirosSnap.empty) {
-      console.log('Seeding initial barbeiros into Firestore...');
-      const batch = writeBatch(db);
-      for (const barb of DEFAULT_BARBEIROS) {
-        batch.set(doc(db, 'barbeiros', barb.id), barb);
-      }
-      await batch.commit();
-    }
-
-    // Check availability
-    const dispSnap = await getDocs(collection(db, 'disponibilidades'));
-    if (dispSnap.empty) {
-      const batch = writeBatch(db);
-      for (const barb of DEFAULT_BARBEIROS) {
-        const disp: Disponibilidade = {
-          id: `disp-${barb.id}`,
-          barbeiroId: barb.id,
-          diasSemana: [1, 2, 3, 4, 5, 6], // Seg a Sáb
-          horarioInicio: '08:00',
-          horarioFim: '18:00',
-          intervaloMinutos: 10,
-          pausaInicio: '12:00',
-          pausaFim: '13:00',
-          dataAtualizacao: new Date().toISOString(),
-        };
-        batch.set(doc(db, 'disponibilidades', disp.id), disp);
-      }
-      await batch.commit();
-    }
-
-    // Purge any remnant mock/test data from Firestore so the app runs in clean production mode
+    // In production mode, do NOT seed mock services or mock barbers.
+    // Instead, purge any previously seeded test data so the database is 100% clean.
     await purgeAllTestData();
   } catch (err) {
     console.error('Error during initial Firestore setup:', err);
@@ -202,7 +66,88 @@ export async function seedInitialDataIfNeeded() {
  */
 export async function purgeAllTestData(): Promise<void> {
   try {
-    // 1. Delete all test appointments
+    await ensureAnonymousAuth();
+
+    // 1. Delete all test barbers
+    const barbeirosSnap = await getDocs(collection(db, 'barbeiros'));
+    if (!barbeirosSnap.empty) {
+      const batch = writeBatch(db);
+      let count = 0;
+      for (const docSnap of barbeirosSnap.docs) {
+        const id = docSnap.id;
+        const data = docSnap.data();
+        const isTestId = ['barb-carlos', 'barb-rafael', 'barb-lucas'].includes(id);
+        const isTestName = ['Carlos Silva', 'Rafael Costa', 'Lucas Mendes'].includes(data.nome);
+        const isTestEmail = data.email?.includes('@liderbarbers.com.br');
+
+        if (isTestId || isTestName || isTestEmail) {
+          batch.delete(docSnap.ref);
+          count++;
+        }
+      }
+      if (count > 0) {
+        await batch.commit();
+        console.log(`[Clean Mode] Removidos ${count} barbeiros de teste do Firestore.`);
+      }
+    }
+
+    // 2. Delete all test services
+    const servicosSnap = await getDocs(collection(db, 'servicos'));
+    if (!servicosSnap.empty) {
+      const batch = writeBatch(db);
+      let count = 0;
+      for (const docSnap of servicosSnap.docs) {
+        const id = docSnap.id;
+        const data = docSnap.data();
+        const isTestId = [
+          'serv-corte',
+          'serv-barba',
+          'serv-corte-barba',
+          'serv-pezinho',
+          'serv-sobrancelha',
+        ].includes(id);
+        const isTestName = [
+          'Corte de cabelo',
+          'Barba',
+          'Corte + Barba',
+          'Pezinho',
+          'Sobrancelha',
+        ].includes(data.nome);
+
+        if (isTestId || isTestName) {
+          batch.delete(docSnap.ref);
+          count++;
+        }
+      }
+      if (count > 0) {
+        await batch.commit();
+        console.log(`[Clean Mode] Removidos ${count} serviços de teste do Firestore.`);
+      }
+    }
+
+    // 3. Delete all test availability
+    const dispSnap = await getDocs(collection(db, 'disponibilidades'));
+    if (!dispSnap.empty) {
+      const batch = writeBatch(db);
+      let count = 0;
+      for (const docSnap of dispSnap.docs) {
+        const id = docSnap.id;
+        const data = docSnap.data();
+        const isTestId = ['disp-barb-carlos', 'disp-barb-rafael', 'disp-barb-lucas'].includes(id);
+        const isTestBarber = ['barb-carlos', 'barb-rafael', 'barb-lucas'].includes(data.barbeiroId);
+
+        if (isTestId || isTestBarber) {
+          batch.delete(docSnap.ref);
+          count++;
+        }
+      }
+      if (count > 0) {
+        await batch.commit();
+        console.log(`[Clean Mode] Removidas ${count} disponibilidades de teste.`);
+      }
+    }
+
+    // 4. Delete all test appointments
     const agendamentosSnap = await getDocs(collection(db, 'agendamentos'));
     if (!agendamentosSnap.empty) {
       const batch = writeBatch(db);
@@ -216,8 +161,9 @@ export async function purgeAllTestData(): Promise<void> {
           data.clienteNome === 'Pedro Santos' ||
           data.clienteNome === 'Lucas Ferreira' ||
           data.clienteNome === 'Rafael Oliveira';
-        
-        if (isTestId || isTestClient) {
+        const isTestBarber = ['barb-carlos', 'barb-rafael', 'barb-lucas'].includes(data.barbeiroId);
+
+        if (isTestId || isTestClient || isTestBarber) {
           batch.delete(docSnap.ref);
           count++;
         }
@@ -228,7 +174,7 @@ export async function purgeAllTestData(): Promise<void> {
       }
     }
 
-    // 2. Delete test administrators (e.g. admin-matriz-1, admin-jardins-1)
+    // 5. Delete test administrators (e.g. admin-matriz-1, admin-jardins-1)
     const adminsSnap = await getDocs(collection(db, 'administradores_barbearia'));
     if (!adminsSnap.empty) {
       const batch = writeBatch(db);
@@ -245,7 +191,7 @@ export async function purgeAllTestData(): Promise<void> {
       }
     }
 
-    // 3. Delete extra mock units (e.g. unidade-jardins, unidade-morumbi)
+    // 6. Delete extra mock units (e.g. unidade-jardins, unidade-morumbi)
     const unitsSnap = await getDocs(collection(db, 'barbearias'));
     if (!unitsSnap.empty) {
       const batch = writeBatch(db);

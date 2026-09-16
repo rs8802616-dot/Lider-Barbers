@@ -39,7 +39,7 @@ import { CopyBarberLinkButton } from '../common/CopyBarberLinkButton';
 import { ShareLinksCard } from '../common/ShareLinksCard';
 
 interface BarberModuleProps {
-  currentBarber: Barbeiro;
+  currentBarber: Barbeiro | null;
   agendamentos: Agendamento[];
   servicos: Servico[];
   disponibilidade?: Disponibilidade;
@@ -85,6 +85,40 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
       setIntervalMinutes(disponibilidade.intervaloMinutos ?? 10);
     }
   }, [disponibilidade]);
+
+  if (!currentBarber) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#D4AF37]">
+          <Scissors className="w-8 h-8" />
+        </div>
+        <h3 className="text-lg font-bold text-zinc-100 font-display">Nenhum Barbeiro Selecionado</h3>
+        <p className="text-xs text-zinc-400 max-w-md">
+          Ainda não há cadastro de barbeiros no sistema. O administrador deve cadastrar a equipe através do painel gerencial.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          {onSwitchToAdmin && (
+            <button
+              type="button"
+              onClick={onSwitchToAdmin}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 font-bold text-xs"
+            >
+              Ir para Painel do Administrador
+            </button>
+          )}
+          {onExitToStore && (
+            <button
+              type="button"
+              onClick={onExitToStore}
+              className="px-4 py-2.5 rounded-xl border border-zinc-800 text-zinc-300 text-xs hover:bg-zinc-800"
+            >
+              Voltar à Loja
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Filter appointments for this barber
   const barberAgendamentos = agendamentos.filter((a) => a.barbeiroId === currentBarber.id);

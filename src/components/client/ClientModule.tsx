@@ -55,7 +55,9 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
   // Wizard steps: 1 = Servico, 2 = Barbeiro, 3 = Data e Horário, 4 = Confirmar
   // Se veio por link direto do barbeiro, inicia no passo 1 (Serviço) ou 3 (Data) com o barbeiro já selecionado
   const [wizardStep, setWizardStep] = useState<number>(initialBarberId ? 1 : 1);
-  const [selectedServicoId, setSelectedServicoId] = useState<string>('serv-corte');
+  const [selectedServicoId, setSelectedServicoId] = useState<string>(() => {
+    return servicos[0]?.id || '';
+  });
   const [selectedBarbeiroId, setSelectedBarbeiroId] = useState<string>(() => {
     if (initialBarberId && barbeiros.some((b) => b.id === initialBarberId)) {
       return initialBarberId;
@@ -64,7 +66,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
     if (saved && barbeiros.some((b) => b.id === saved)) {
       return saved;
     }
-    return 'barb-carlos';
+    return barbeiros[0]?.id || '';
   });
 
   // Track if user arrived through direct barber invitation link
@@ -75,7 +77,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
     return null;
   });
 
-  // Update selection if initialBarberId changes
+  // Update selection if initialBarberId or lists change
   useEffect(() => {
     if (initialBarberId) {
       const found = barbeiros.find((b) => b.id === initialBarberId);
@@ -84,8 +86,16 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
         setInvitedBarber(found);
         localStorage.setItem('lider_prefered_barber_id', found.id);
       }
+    } else if (!selectedBarbeiroId && barbeiros.length > 0) {
+      setSelectedBarbeiroId(barbeiros[0].id);
     }
-  }, [initialBarberId, barbeiros]);
+  }, [initialBarberId, barbeiros, selectedBarbeiroId]);
+
+  useEffect(() => {
+    if (!selectedServicoId && servicos.length > 0) {
+      setSelectedServicoId(servicos[0].id);
+    }
+  }, [servicos, selectedServicoId]);
 
   // Save selected barber preference whenever it changes
   const handleSelectBarber = (barberId: string) => {
@@ -509,33 +519,39 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {servicos.slice(0, 6).map((serv) => (
-                <div
-                  key={serv.id}
-                  onClick={() => {
-                    setSelectedServicoId(serv.id);
-                    setWizardStep(2);
-                    setActiveTab('agendar');
-                  }}
-                  className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-[#D4AF37]/50 transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#D4AF37] mb-2.5 group-hover:bg-[#D4AF37]/10 transition-colors">
-                      <Scissors className="w-4 h-4" />
+            {servicos.length === 0 ? (
+              <div className="p-6 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-center text-xs text-zinc-500">
+                Nenhum serviço cadastrado no momento. Cadastre serviços através do painel gerencial.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {servicos.slice(0, 6).map((serv) => (
+                  <div
+                    key={serv.id}
+                    onClick={() => {
+                      setSelectedServicoId(serv.id);
+                      setWizardStep(2);
+                      setActiveTab('agendar');
+                    }}
+                    className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-[#D4AF37]/50 transition-all cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#D4AF37] mb-2.5 group-hover:bg-[#D4AF37]/10 transition-colors">
+                        <Scissors className="w-4 h-4" />
+                      </div>
+                      <h4 className="text-xs font-semibold text-zinc-200 line-clamp-1">{serv.nome}</h4>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">{serv.duracaoMinutos} min</p>
                     </div>
-                    <h4 className="text-xs font-semibold text-zinc-200 line-clamp-1">{serv.nome}</h4>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">{serv.duracaoMinutos} min</p>
+                    <div className="mt-3 pt-2 border-t border-zinc-800/80 flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#D4AF37]">
+                        R$ {serv.preco.toFixed(2).replace('.', ',')}
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-[#D4AF37] transition-colors" />
+                    </div>
                   </div>
-                  <div className="mt-3 pt-2 border-t border-zinc-800/80 flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#D4AF37]">
-                      R$ {serv.preco.toFixed(2).replace('.', ',')}
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-[#D4AF37] transition-colors" />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Nossos Barbeiros */}
@@ -544,39 +560,47 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
               <h3 className="text-sm sm:text-base font-bold text-zinc-200 font-display">
                 Nossos Barbeiros
               </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setWizardStep(2);
-                  setActiveTab('agendar');
-                }}
-                className="text-xs text-[#C5A059] hover:underline"
-              >
-                Ver todos
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {barbeiros.map((barb) => (
-                <div
-                  key={barb.id}
+              {barbeiros.length > 0 && (
+                <button
+                  type="button"
                   onClick={() => {
-                    setSelectedBarbeiroId(barb.id);
-                    setWizardStep(3);
+                    setWizardStep(2);
                     setActiveTab('agendar');
                   }}
-                  className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-[#D4AF37]/50 transition-all text-center cursor-pointer group"
+                  className="text-xs text-[#C5A059] hover:underline"
                 >
-                  <img
-                    src={barb.foto}
-                    alt={barb.nome}
-                    className="w-14 h-14 rounded-full mx-auto object-cover border-2 border-zinc-700 group-hover:border-[#D4AF37] transition-colors mb-2"
-                  />
-                  <h4 className="text-xs font-semibold text-zinc-200 line-clamp-1">{barb.nome}</h4>
-                  <p className="text-[10px] text-zinc-500 line-clamp-1 mt-0.5">{barb.especialidade}</p>
-                </div>
-              ))}
+                  Ver todos
+                </button>
+              )}
             </div>
+
+            {barbeiros.length === 0 ? (
+              <div className="p-6 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-center text-xs text-zinc-500">
+                Nenhum barbeiro cadastrado no momento. Cadastre a equipe no painel gerencial.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {barbeiros.map((barb) => (
+                  <div
+                    key={barb.id}
+                    onClick={() => {
+                      setSelectedBarbeiroId(barb.id);
+                      setWizardStep(3);
+                      setActiveTab('agendar');
+                    }}
+                    className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 hover:border-[#D4AF37]/50 transition-all text-center cursor-pointer group"
+                  >
+                    <img
+                      src={barb.foto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'}
+                      alt={barb.nome}
+                      className="w-14 h-14 rounded-full mx-auto object-cover border-2 border-zinc-700 group-hover:border-[#D4AF37] transition-colors mb-2"
+                    />
+                    <h4 className="text-xs font-semibold text-zinc-200 line-clamp-1">{barb.nome}</h4>
+                    <p className="text-[10px] text-zinc-500 line-clamp-1 mt-0.5">{barb.especialidade}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Informações de Contato e Localização */}
@@ -631,49 +655,60 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
           {/* STEP 1: SERVIÇO */}
           {wizardStep === 1 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {servicos.map((serv) => {
-                  const isSelected = selectedServicoId === serv.id;
-                  return (
-                    <div
-                      key={serv.id}
-                      onClick={() => setSelectedServicoId(serv.id)}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? 'bg-[#1e1e24] border-[#D4AF37] ring-1 ring-[#D4AF37]'
-                          : 'bg-[#18181b] border-zinc-800 hover:border-zinc-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                            isSelected
-                              ? 'border-[#D4AF37] bg-[#D4AF37] text-zinc-950'
-                              : 'border-zinc-600'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+              {servicos.length === 0 ? (
+                <div className="p-8 rounded-xl bg-[#18181b] border border-zinc-800 text-center space-y-2">
+                  <Scissors className="w-8 h-8 text-[#D4AF37] mx-auto opacity-60" />
+                  <h4 className="text-sm font-bold text-zinc-200">Nenhum serviço disponível</h4>
+                  <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                    Ainda não há serviços cadastrados no sistema. Acesse o painel administrativo para cadastrar os serviços e preços.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {servicos.map((serv) => {
+                    const isSelected = selectedServicoId === serv.id;
+                    return (
+                      <div
+                        key={serv.id}
+                        onClick={() => setSelectedServicoId(serv.id)}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? 'bg-[#1e1e24] border-[#D4AF37] ring-1 ring-[#D4AF37]'
+                            : 'bg-[#18181b] border-zinc-800 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                              isSelected
+                                ? 'border-[#D4AF37] bg-[#D4AF37] text-zinc-950'
+                                : 'border-zinc-600'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-semibold text-zinc-100">{serv.nome}</h4>
+                            <p className="text-[11px] text-zinc-400">
+                              R$ {serv.preco.toFixed(2).replace('.', ',')} • {serv.duracaoMinutos} min
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-xs font-semibold text-zinc-100">{serv.nome}</h4>
-                          <p className="text-[11px] text-zinc-400">
-                            R$ {serv.preco.toFixed(2).replace('.', ',')} • {serv.duracaoMinutos} min
-                          </p>
-                        </div>
-                      </div>
 
-                      <span className="text-xs font-bold text-[#D4AF37]">
-                        R$ {serv.preco.toFixed(2).replace('.', ',')}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+                        <span className="text-xs font-bold text-[#D4AF37]">
+                          R$ {serv.preco.toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               <button
                 type="button"
+                disabled={!selectedServico || servicos.length === 0}
                 onClick={() => setWizardStep(2)}
-                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.99] transition-all shadow-lg shadow-[#D4AF37]/20 mt-4"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.99] transition-all shadow-lg shadow-[#D4AF37]/20 mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Próximo: Escolher Barbeiro
               </button>
@@ -683,45 +718,55 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
           {/* STEP 2: BARBEIRO */}
           {wizardStep === 2 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {barbeiros.map((barb) => {
-                  const isSelected = selectedBarbeiroId === barb.id;
-                  return (
-                    <div
-                      key={barb.id}
-                      onClick={() => handleSelectBarber(barb.id)}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? 'bg-[#1e1e24] border-[#D4AF37] ring-1 ring-[#D4AF37]'
-                          : 'bg-[#18181b] border-zinc-800 hover:border-zinc-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={barb.foto}
-                          alt={barb.nome}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-zinc-700"
-                        />
-                        <div>
-                          <h4 className="text-xs font-semibold text-zinc-100">{barb.nome}</h4>
-                          <p className="text-[11px] text-[#C5A059]">{barb.especialidade}</p>
-                          <p className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">{barb.descricao}</p>
-                        </div>
-                      </div>
-
+              {barbeiros.length === 0 ? (
+                <div className="p-8 rounded-xl bg-[#18181b] border border-zinc-800 text-center space-y-2">
+                  <User className="w-8 h-8 text-[#D4AF37] mx-auto opacity-60" />
+                  <h4 className="text-sm font-bold text-zinc-200">Nenhum barbeiro cadastrado</h4>
+                  <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                    Ainda não há profissionais cadastrados no sistema. Acesse o painel administrativo para cadastrar a equipe de barbeiros.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {barbeiros.map((barb) => {
+                    const isSelected = selectedBarbeiroId === barb.id;
+                    return (
                       <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                        key={barb.id}
+                        onClick={() => handleSelectBarber(barb.id)}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                           isSelected
-                            ? 'border-[#D4AF37] bg-[#D4AF37] text-zinc-950'
-                            : 'border-zinc-600'
+                            ? 'bg-[#1e1e24] border-[#D4AF37] ring-1 ring-[#D4AF37]'
+                            : 'bg-[#18181b] border-zinc-800 hover:border-zinc-700'
                         }`}
                       >
-                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={barb.foto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'}
+                            alt={barb.nome}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-zinc-700"
+                          />
+                          <div>
+                            <h4 className="text-xs font-semibold text-zinc-100">{barb.nome}</h4>
+                            <p className="text-[11px] text-[#C5A059]">{barb.especialidade}</p>
+                            <p className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">{barb.descricao}</p>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                            isSelected
+                              ? 'border-[#D4AF37] bg-[#D4AF37] text-zinc-950'
+                              : 'border-zinc-600'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="flex items-center gap-3 mt-4">
                 <button
@@ -733,8 +778,9 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
                 </button>
                 <button
                   type="button"
+                  disabled={!selectedBarbeiro || barbeiros.length === 0}
                   onClick={() => setWizardStep(3)}
-                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.99] transition-all shadow-lg shadow-[#D4AF37]/20"
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B38F2E] text-zinc-950 font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.99] transition-all shadow-lg shadow-[#D4AF37]/20 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Próximo: Data e Horário
                 </button>
