@@ -143,6 +143,30 @@
     - Tipografia calibrada rigorosamente para conformidade com contraste WCAG AA (`#0F172A`, `#1E293B`, `#475569`).
   - No Modo Escuro: experiência de luxo noturna com fundo carvão `#0D0D0F`, superfícies `#141417`, acentos dourados e texto claro.
 
+### Versão 1.7 (Arquitetura de Acesso Oculto por Parâmetros de URL & Vitrine 100% Limpa)
+- **Vitrine Pública do Cliente 100% Limpa (`https://seusite.com/`):**
+  - O sistema detecta a ausência de parâmetros de controle e exibe apenas a vitrine pública de agendamento de serviços.
+  - Zero botões visíveis de "Login", "Área Restrita", "Acesso da Equipe" ou formulários técnicos no cabeçalho, rodapé ou tela de perfil do cliente.
+  - Experiência fluida e focada exclusivamente na conversão de agendamentos para quem compra ou agenda.
+- **Acesso Administrativo e de Barbeiros por Parâmetros de URL (Query Params & Hash):**
+  - **Link Exclusivo do Lojista (Admin):** `?admin=1`, `?admin=true` ou `#/admin` — abre imediatamente a tela de login/painel administrativo protegido por PIN/senha (`admin123`).
+  - **Link Exclusivo do Dono do App (Master):** `?master=1`, `?dono=1` ou `#/master` — abre o painel Super Admin multi-unidades com autenticação Master (`master123`).
+  - **Link Exclusivo da Agenda do Barbeiro:** `?barbeiro=1` ou `#/barbeiro` — abre diretamente o painel de atendimentos do profissional com senha (`barber123`).
+  - **Links com Token Seguro / Chave Secreta (`?chave=...` ou `?token=...`):**
+    - `?chave=admin123`: Desbloqueia e autentica o Administrador automaticamente sem exigir redigitação de senha.
+    - `?chave=master123`: Desbloqueia e autentica o Dono do App (Super Admin) diretamente.
+    - `?chave=barber123`: Desbloqueia e autentica o Barbeiro instantaneamente.
+  - **Links de Atendimento Direto do Barbeiro:** `/b/:slug` ou `?b=slug` ou `?barbeiro=slug` — abre a loja pública com o barbeiro já pré-selecionado para agendamento.
+- **Central de Links & Divulgação (`ShareLinksCard`):**
+  - Adicionado nos módulos de gestão (`AdminModule`, `SuperAdminModule`, `BarberModule`) com cópia em 1 clique:
+    1. *Link da Loja para Clientes*: `window.location.origin + window.location.pathname` (para Instagram, Bio, WhatsApp e Google).
+    2. *Link Exclusivo do Lojista*: com `?admin=1` para o lojista salvar nos favoritos do celular ou navegador.
+    3. *Link Seguro com Chave*: com `?chave=admin123` para acesso rápido.
+    4. *Link da Agenda do Barbeiro*: com `?barbeiro=1`.
+- **Retorno Seguro e Limpeza de URL:**
+  - Botão "Voltar à Loja" ou "Sair" nos painéis gerenciais limpa automaticamente os parâmetros da URL (`window.history.pushState`) e devolve o usuário à vitrine limpa de clientes.
+  - Se o modal de senha for cancelado, a URL é limpa automaticamente via `window.history.replaceState`.
+
 ---
 
 ## 6. Diretrizes para Próximas Alterações

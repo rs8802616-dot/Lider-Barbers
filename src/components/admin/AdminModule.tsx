@@ -20,12 +20,14 @@ import {
   Sparkles,
   ChevronRight,
   Filter,
+  LogOut,
 } from 'lucide-react';
 import { Barbeiro, Servico, Agendamento, AppointmentStatus } from '../../types';
 import { doc, updateDoc, setDoc, addDoc, collection, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { sendNotification } from '../../services/notificationService';
 import { CopyBarberLinkButton } from '../common/CopyBarberLinkButton';
+import { ShareLinksCard } from '../common/ShareLinksCard';
 
 interface AdminModuleProps {
   barbeiros: Barbeiro[];
@@ -33,6 +35,7 @@ interface AdminModuleProps {
   agendamentos: Agendamento[];
   onRefreshData: () => void;
   onSwitchToBarber?: (barberId: string) => void;
+  onExitToStore?: () => void;
 }
 
 export const AdminModule: React.FC<AdminModuleProps> = ({
@@ -41,6 +44,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   agendamentos,
   onRefreshData,
   onSwitchToBarber,
+  onExitToStore,
 }) => {
   // Navigation tabs: 'dashboard' | 'barbeiros' | 'servicos' | 'agendamentos' | 'configuracoes'
   const [activeTab, setActiveTab] = useState<'dashboard' | 'barbeiros' | 'servicos' | 'agendamentos' | 'configuracoes'>('dashboard');
@@ -191,6 +195,20 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
 
         {/* Action Controls & Tab Switcher Buttons */}
         <div className="flex items-center gap-2 w-full lg:w-auto">
+          {/* Botão Voltar para a Loja Limpa (Clientes) */}
+          {onExitToStore && (
+            <button
+              type="button"
+              onClick={onExitToStore}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-semibold transition-all shadow-sm whitespace-nowrap shrink-0"
+              title="Sair do painel administrativo e voltar para a vitrine limpa da loja"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">Voltar à Loja</span>
+              <span className="sm:hidden">Loja</span>
+            </button>
+          )}
+
           {/* Alternar para modo Barbeiro em telas maiores */}
           {onSwitchToBarber && (
             <button
@@ -330,6 +348,9 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Central de Links da Barbearia & Acesso por URL (Sem botões na loja pública) */}
+          <ShareLinksCard role="administrador" />
 
           {/* Quick Broadcast Push Notification Card */}
           <div className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 space-y-3">
@@ -606,10 +627,13 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
         <div className="space-y-4 animate-in fade-in">
           <div className="pb-2 border-b border-zinc-800">
             <h3 className="text-base font-bold text-zinc-100 font-display">
-              Configurações
+              Configurações & Divulgação
             </h3>
-            <p className="text-xs text-zinc-400">Preferências do estabelecimento</p>
+            <p className="text-xs text-zinc-400">Preferências do estabelecimento e links exclusivos de acesso</p>
           </div>
+
+          {/* Central de Links & Acesso Inteligente */}
+          <ShareLinksCard role="administrador" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[

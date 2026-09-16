@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Crown,
   Sparkles,
+  LogOut,
 } from 'lucide-react';
 import { AdminBarbearia, BarbeariaUnidade } from '../../types';
 import { db } from '../../firebase/config';
@@ -28,9 +29,11 @@ import {
   doc,
   deleteDoc,
 } from 'firebase/firestore';
+import { ShareLinksCard } from '../common/ShareLinksCard';
 
 interface SuperAdminModuleProps {
   onRefreshData?: () => void;
+  onExitToStore?: () => void;
 }
 
 // Initial seed units if database is empty
@@ -84,7 +87,10 @@ const DEFAULT_ADMINS: AdminBarbearia[] = [
   },
 ];
 
-export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({ onRefreshData }) => {
+export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
+  onRefreshData,
+  onExitToStore,
+}) => {
   const [admins, setAdmins] = useState<AdminBarbearia[]>([]);
   const [barbearias, setBarbearias] = useState<BarbeariaUnidade[]>([]);
   const [loading, setLoading] = useState(true);
@@ -292,6 +298,17 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({ onRefreshDat
         </div>
 
         <div className="flex items-center gap-2 self-start md:self-auto">
+          {onExitToStore && (
+            <button
+              type="button"
+              onClick={onExitToStore}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-all shadow-sm"
+              title="Voltar para a vitrine limpa da loja (clientes)"
+            >
+              <LogOut className="w-4 h-4 text-rose-400" />
+              <span>Voltar à Loja</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={loadSuperAdminData}
@@ -310,6 +327,9 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({ onRefreshDat
           </button>
         </div>
       </div>
+
+      {/* Central de Links & Acesso Inteligente (Query Params) */}
+      <ShareLinksCard role="super_admin" />
 
       {submitSuccess && (
         <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in">

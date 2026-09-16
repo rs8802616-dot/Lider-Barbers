@@ -23,6 +23,7 @@ import {
   Award,
   Filter,
   ShieldAlert,
+  LogOut,
 } from 'lucide-react';
 import {
   Barbeiro,
@@ -35,6 +36,7 @@ import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { sendNotification } from '../../services/notificationService';
 import { CopyBarberLinkButton } from '../common/CopyBarberLinkButton';
+import { ShareLinksCard } from '../common/ShareLinksCard';
 
 interface BarberModuleProps {
   currentBarber: Barbeiro;
@@ -43,6 +45,7 @@ interface BarberModuleProps {
   disponibilidade?: Disponibilidade;
   onRefreshData: () => void;
   onSwitchToAdmin?: () => void;
+  onExitToStore?: () => void;
 }
 
 export const BarberModule: React.FC<BarberModuleProps> = ({
@@ -52,6 +55,7 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
   disponibilidade,
   onRefreshData,
   onSwitchToAdmin,
+  onExitToStore,
 }) => {
   // Navigation: 'agenda' | 'clientes' | 'disponibilidade' | 'faturamento'
   const [activeScreen, setActiveScreen] = useState<'agenda' | 'clientes' | 'disponibilidade' | 'faturamento'>('agenda');
@@ -222,6 +226,20 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
               >
                 <ShieldAlert className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                 <span>Painel Admin</span>
+              </button>
+            )}
+
+            {/* Voltar para a Loja Limpa */}
+            {onExitToStore && (
+              <button
+                type="button"
+                onClick={onExitToStore}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-semibold transition-all shadow-sm whitespace-nowrap"
+                title="Voltar para a vitrine limpa da loja (clientes)"
+              >
+                <LogOut className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span className="hidden sm:inline">Voltar à Loja</span>
+                <span className="sm:hidden">Loja</span>
               </button>
             )}
           </div>
@@ -430,6 +448,14 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
             </h3>
             <span className="text-xs text-zinc-400">Total: {clientsList.length}</span>
           </div>
+
+          {/* Central de Links & Acesso Inteligente */}
+          <ShareLinksCard
+            role="barbeiro"
+            barberSlug={currentBarber.slug}
+            barberId={currentBarber.id}
+            barberName={currentBarber.nome}
+          />
 
           <div>
             {clientsList.length === 0 ? (
