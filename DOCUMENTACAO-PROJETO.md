@@ -132,10 +132,15 @@
 ### Versão 1.6 (Suporte a Modo Claro e Modo Escuro + Diagnóstico de Atualização da Tela)
 - **Diagnóstico da Atualização da Tela:**
   - No ambiente de desenvolvimento do Google AI Studio, o HMR (*Hot Module Replacement*) instantâneo a cada tecla é desativado propositalmente (`DISABLE_HMR=true`) enquanto o agente edita o código em múltiplos arquivos. Isso evita travamentos, telas brancas e piscadas intermediárias. A prévia é atualizada assim que o turno do assistente finaliza. O servidor de desenvolvimento foi reiniciado com sucesso para reestabelecer o processo e a comunicação do Vite.
-- **Modo Claro e Modo Escuro (Dark & Light Mode):**
+- **Modo Claro e Modo Escuro (Dark & Light Mode) — Pronto para Produção:**
   - Adicionado botão alternador no Cabeçalho (`#btn-theme-toggle`), alternando dinamicamente entre o ícone de Sol (☀️ para ativar modo claro) e Lua (🌙 para ativar modo escuro).
   - Provedor global `ThemeProvider` em `src/context/ThemeContext.tsx` com persistência no `localStorage` (`lider_theme`).
-  - No Modo Claro: paleta limpa com fundo `#F4F5F7`, cartões e cabeçalho em `#FFFFFF`, tipografia nítida `#0F172A` / `#334155`, botões dourados preservados com contraste de acessibilidade e bordas sutis.
+  - **Correção e Refinamento do Modo Claro para Produção:**
+    - Mapeamento integral de todos os containers, cards de serviços, cards de barbeiros, caixas de métricas, calendários e caixas modais para fundo branco `#FFFFFF` com bordas sutis `#E2E8F0`.
+    - O Hero Banner no modo claro agora exibe um design luxuoso em gradiente champanhe dourado suave (`#FFFDF8` a `#F4EBDA`), com tipografia espresso de alto contraste (`#1E1B13`) e botões dourados preservados.
+    - Badges de status (Confirmado, Em Atendimento, Agendado, Cancelado) ajustados para tons claros elegantes e legíveis.
+    - Barra de navegação inferior mobile adaptada para branco com desfoque de fundo (`rgba(255, 255, 255, 0.96)`).
+    - Tipografia calibrada rigorosamente para conformidade com contraste WCAG AA (`#0F172A`, `#1E293B`, `#475569`).
   - No Modo Escuro: experiência de luxo noturna com fundo carvão `#0D0D0F`, superfícies `#141417`, acentos dourados e texto claro.
 
 ---

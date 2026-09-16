@@ -429,7 +429,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
           )}
 
           {/* Hero Banner Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1C1C21] via-[#161619] to-[#0E0E10] border border-zinc-800/90 p-5 sm:p-8 shadow-xl">
+          <div id="client-hero-card" className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1C1C21] via-[#161619] to-[#0E0E10] border border-zinc-800/90 p-5 sm:p-8 shadow-xl">
             <div className="absolute -right-8 -bottom-8 w-60 h-60 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="max-w-xl">

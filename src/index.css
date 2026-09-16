@@ -40,8 +40,16 @@
 }
 
 /* =========================================================================
-   LIGHT MODE STYLES & CONTRAST REFINEMENTS (.theme-light)
+   LIGHT MODE STYLES & LUXURY REFINEMENTS (.theme-light / .light)
    ========================================================================= */
+.theme-light,
+.light,
+.theme-light body,
+.light body {
+  background-color: #F4F5F7 !important;
+  color: #0F172A !important;
+}
+
 .theme-light ::-webkit-scrollbar-track {
   background: #F1F5F9;
 }
@@ -52,76 +60,154 @@
   background: #997A23;
 }
 
-/* Page, Containers & Layout Backgrounds */
+/* Base App Layout and Root Modules */
 .theme-light .bg-\[\#0D0D0F\],
-.theme-light .bg-\[\#121212\] {
+.theme-light .bg-\[\#121212\],
+.theme-light .bg-\[\#0E0E10\] {
   background-color: #F4F5F7 !important;
 }
 
+/* Top Sticky Header */
 .theme-light header,
 .theme-light .bg-\[\#121212\]\/95 {
   background-color: rgba(255, 255, 255, 0.95) !important;
   border-color: #E2E8F0 !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.06) !important;
 }
 
-.theme-light .bg-\[\#141417\],
-.theme-light .bg-\[\#161619\],
-.theme-light .bg-\[\#1A1A1E\] {
+/* Hero Banner in Light Mode - Luxury Warm Champagne Gold Aesthetic */
+.theme-light #client-hero-card,
+.theme-light [class*="from-\[\#1C1C21\]"] {
+  background-color: #FFFDF8 !important;
+  background-image: linear-gradient(135deg, #FFFDF8 0%, #FAF5E8 50%, #F4EBDA 100%) !important;
+  border-color: #E6D29D !important;
+  box-shadow: 0 10px 25px -5px rgba(212, 175, 55, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.theme-light #client-hero-card h3,
+.theme-light [class*="from-\[\#1C1C21\]"] h3 {
+  color: #1E1B13 !important;
+}
+
+.theme-light #client-hero-card p,
+.theme-light [class*="from-\[\#1C1C21\]"] p {
+  color: #5C523B !important;
+}
+
+.theme-light #client-hero-card span,
+.theme-light [class*="from-\[\#1C1C21\]"] span {
+  color: #8C6F1C !important;
+}
+
+/* Invited Barber Link Card in Light Mode */
+.theme-light [class*="from-\[\#D4AF37\]\/15"] {
+  background-color: #FFFDF8 !important;
+  background-image: linear-gradient(to right, rgba(212, 175, 55, 0.14), #FFFFFF, #FFFDF8) !important;
+  border-color: rgba(212, 175, 55, 0.4) !important;
+}
+
+/* Admin, Barber & SuperAdmin Top Header Banners */
+.theme-light [class*="from-\[\#1A1A1E\]"],
+.theme-light [class*="from-\[\#1c1810\]"] {
   background-color: #FFFFFF !important;
+  background-image: linear-gradient(to right, #FFFFFF, #F8FAFC, #FFFFFF) !important;
   border-color: #E2E8F0 !important;
 }
 
+/* All Card Blocks & Containers in Light Mode (Services, Barbers, Metrics, Dialogs, etc.) */
+.theme-light .bg-\[\#18181b\],
+.theme-light .bg-\[\#18181c\],
+.theme-light .bg-\[\#161619\],
+.theme-light .bg-\[\#141417\],
+.theme-light .bg-\[\#1c1c20\],
+.theme-light .bg-\[\#1e1e24\],
+.theme-light .bg-\[\#1C1C21\],
+.theme-light .bg-\[\#1A1A1E\],
+.theme-light .bg-\[\#121214\],
+.theme-light .bg-\[\#151518\],
+.theme-light .bg-\[\#1c1810\] {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Selected Items in Wizard (e.g. step 1 service or step 2 barber) */
+.theme-light [class*="ring-\[\#D4AF37\]"],
+.theme-light .border-\[\#D4AF37\].bg-\[\#1e1e24\] {
+  background-color: #FFFDF5 !important;
+  border-color: #D4AF37 !important;
+}
+
+/* Neutral Gray Secondary Containers */
 .theme-light .bg-zinc-900,
 .theme-light .bg-zinc-900\/90,
 .theme-light .bg-zinc-900\/80,
+.theme-light .bg-zinc-900\/70,
+.theme-light .bg-zinc-900\/60,
 .theme-light .bg-zinc-900\/50,
-.theme-light .bg-zinc-900\/60 {
-  background-color: #F1F5F9 !important;
+.theme-light .bg-zinc-900\/40,
+.theme-light .bg-zinc-900\/30 {
+  background-color: #F8FAFC !important;
   border-color: #E2E8F0 !important;
 }
 
 .theme-light .bg-zinc-800,
 .theme-light .bg-zinc-800\/80,
+.theme-light .bg-zinc-800\/70,
 .theme-light .bg-zinc-800\/50 {
-  background-color: #E2E8F0 !important;
+  background-color: #F1F5F9 !important;
   border-color: #CBD5E1 !important;
 }
 
-/* Border Adaptations */
+/* Subtle Borders */
 .theme-light .border-zinc-800,
+.theme-light .border-zinc-800\/90,
 .theme-light .border-zinc-800\/80,
+.theme-light .border-zinc-800\/70,
 .theme-light .border-zinc-700,
 .theme-light .border-zinc-700\/60,
-.theme-light .border-zinc-700\/40 {
+.theme-light .border-zinc-700\/40,
+.theme-light .border-zinc-900 {
   border-color: #E2E8F0 !important;
 }
 
-/* Typography & Contrast */
+/* Crystal-Clear High Contrast Typography */
 .theme-light .text-zinc-100,
 .theme-light .text-zinc-200 {
   color: #0F172A !important;
 }
 
-.theme-light .text-zinc-300,
+.theme-light .text-zinc-300 {
+  color: #1E293B !important;
+}
+
 .theme-light .text-zinc-400 {
-  color: #334155 !important;
+  color: #475569 !important;
 }
 
 .theme-light .text-zinc-500 {
   color: #64748B !important;
 }
 
-/* Subtle Golden Contrast on Light Mode */
-.theme-light .text-\[\#C5A059\] {
-  color: #997A23 !important;
+.theme-light .text-zinc-600 {
+  color: #94A3B8 !important;
 }
 
+/* Gold Accent in Light Mode - calibrated for 4.5+:1 WCAG contrast against white */
+.theme-light .text-\[\#C5A059\],
 .theme-light .text-\[\#D4AF37\] {
   color: #997A23 !important;
 }
 
-/* Inputs, Textareas and Dropdowns in Light Mode */
+/* Primary CTA Gold Buttons - Always vivid gold with dark text */
+.theme-light .bg-gradient-to-r.from-\[\#D4AF37\].to-\[\#B38F2E\],
+.theme-light .bg-gradient-to-br.from-\[\#D4AF37\].to-\[\#B38F2E\] {
+  background-image: linear-gradient(to right, #D4AF37, #B38F2E) !important;
+  color: #09090b !important;
+}
+
+/* Form Inputs, Textareas and Dropdowns in Light Mode */
 .theme-light input:not([type="checkbox"]):not([type="radio"]),
 .theme-light select,
 .theme-light textarea {
@@ -130,25 +216,76 @@
   border-color: #CBD5E1 !important;
 }
 
+.theme-light input:not([type="checkbox"]):not([type="radio"]):focus,
+.theme-light select:focus,
+.theme-light textarea:focus {
+  border-color: #D4AF37 !important;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25) !important;
+}
+
 .theme-light input::placeholder,
 .theme-light textarea::placeholder {
   color: #94A3B8 !important;
 }
 
 /* Modals & Dialogs in Light Mode */
-.theme-light .bg-zinc-950,
-.theme-light .bg-\[\#141417\] {
+.theme-light .fixed.inset-0 .bg-\[\#18181b\],
+.theme-light .fixed.inset-0 .bg-\[\#141417\],
+.theme-light .fixed.inset-0 .bg-zinc-950 {
   background-color: #FFFFFF !important;
   color: #0F172A !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Card hover states */
+/* Status Badges in Light Mode */
+.theme-light [class*="bg-emerald-950"] {
+  background-color: #ECFDF5 !important;
+  color: #047857 !important;
+  border-color: #A7F3D0 !important;
+}
+
+.theme-light [class*="bg-amber-950"] {
+  background-color: #FFFBEB !important;
+  color: #B45309 !important;
+  border-color: #FDE68A !important;
+}
+
+.theme-light [class*="bg-blue-950"] {
+  background-color: #EFF6FF !important;
+  color: #1D4ED8 !important;
+  border-color: #BFDBFE !important;
+}
+
+.theme-light [class*="bg-rose-950"] {
+  background-color: #FFF1F2 !important;
+  color: #BE123C !important;
+  border-color: #FECDD3 !important;
+}
+
+/* Mobile Bottom Navigation */
+.theme-light nav.fixed.bottom-0 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Hover & Interactive States */
 .theme-light .hover\:border-zinc-700:hover {
   border-color: #CBD5E1 !important;
 }
+
 .theme-light .hover\:bg-zinc-800\/80:hover,
 .theme-light .hover\:bg-zinc-800:hover {
   background-color: #E2E8F0 !important;
+}
+
+.theme-light .hover\:text-white:hover {
+  color: #0F172A !important;
+}
+
+.theme-light .hover\:text-zinc-200:hover {
+  color: #0F172A !important;
 }
 
 /* Footer & Sub-dividers */
@@ -156,7 +293,3 @@
   background-color: #FFFFFF !important;
   border-color: #E2E8F0 !important;
 }
-.theme-light .border-zinc-900 {
-  border-color: #E2E8F0 !important;
-}
-
