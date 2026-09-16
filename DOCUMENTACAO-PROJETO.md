@@ -113,6 +113,22 @@
   - `/admin`: Acesso ao painel administrativo da barbearia (com senha).
   - `/super-admin` ou `/master`: Acesso ao painel do dono do app (com senha).
 
+### Versão 1.5 (Refatoração do Cabeçalho: Lógica PWA Automática, Links Baseados em Perfis & Isolamento Estrito)
+- **Elementos Permanentes:** O Nome da Barbearia ("Líder Barbers") e o Sino de Notificações com badge de não lidas estão sempre presentes no topo em qualquer tela ou estado de autenticação.
+- **Lógica Reativa de Instalação PWA:**
+  - O botão "Baixar o App" inicia oculto por padrão (`mostrarBotaoInstalar = false`).
+  - No `useEffect`, verifica `display-mode: standalone`. Se o app já estiver instalado e em execução standalone, o botão não é exibido.
+  - O evento nativo `beforeinstallprompt` do navegador é interceptado, armazenando a referência e ativando a exibição do botão.
+  - Ao clicar no botão, o prompt nativo do sistema é exibido. Caso aceito (`outcome === 'accepted'`) ou assim que o evento `appinstalled` for disparado, o botão é imediatamente ocultado.
+- **Links de Navegação Baseados em Perfis (Role-based):**
+  - Barra de links dinâmicos no cabeçalho avaliando `user.role` / `currentRole`:
+    - **Barbeiro:** Visualiza link para o painel de atendimento "Barbeiro" (e "Administrador" se tiver permissão mista) e botão "Sair".
+    - **Administrador:** Visualiza links para "Barbeiro" e "Administrador", além do botão "Sair".
+    - **Dono do Aplicativo:** Visualiza links para "Barbeiro", "Administrador" e "Dono do Aplicativo", além do botão "Sair".
+- **Isolamento de Acesso Total para Clientes:**
+  - Usuários no perfil de cliente têm zero rotas, links de barbeiro, admin ou dono no cabeçalho.
+  - O cliente visualiza estritamente os elementos essenciais: Nome da Barbearia, Sino de Notificações, botão "Baixar o App" (se aplicável) e seu identificador de perfil.
+
 ---
 
 ## 6. Diretrizes para Próximas Alterações

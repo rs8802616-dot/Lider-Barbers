@@ -261,6 +261,18 @@ export default function App() {
     <div className="min-h-screen bg-[#0D0D0F] text-zinc-100 flex flex-col selection:bg-[#D4AF37] selection:text-zinc-950 font-sans">
       {/* Top Bar with Role Switcher & Controls */}
       <Header
+        user={{
+          role: currentRole,
+          nome:
+            currentRole === 'cliente'
+              ? clientUser.nome
+              : currentRole === 'barbeiro'
+              ? barberUser.nome
+              : currentRole === 'super_admin'
+              ? 'Master (Dono)'
+              : 'Admin Barbearia',
+          isAdmin: currentRole === 'barbeiro' ? barberUser.isAdmin : true,
+        }}
         currentRole={currentRole}
         onRoleChange={handleRoleChangeAttempt}
         onLogoutToClient={handleLogoutToClient}
