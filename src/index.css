@@ -3,10 +3,19 @@
 @layer base {
   body {
     font-family: 'Montserrat', sans-serif;
-    background-color: #121212;
-    color: #f4f4f5;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  body.bg-\[\#121212\] {
+    background-color: #121212;
+    color: #f4f4f5;
+  }
+
+  body.bg-\[\#F8F9FA\] {
+    background-color: #F8F9FA;
+    color: #0f172a;
   }
 
   h1, h2, h3, .font-display {
@@ -29,3 +38,125 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #C5A059;
 }
+
+/* =========================================================================
+   LIGHT MODE STYLES & CONTRAST REFINEMENTS (.theme-light)
+   ========================================================================= */
+.theme-light ::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+.theme-light ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+}
+.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: #997A23;
+}
+
+/* Page, Containers & Layout Backgrounds */
+.theme-light .bg-\[\#0D0D0F\],
+.theme-light .bg-\[\#121212\] {
+  background-color: #F4F5F7 !important;
+}
+
+.theme-light header,
+.theme-light .bg-\[\#121212\]\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .bg-\[\#141417\],
+.theme-light .bg-\[\#161619\],
+.theme-light .bg-\[\#1A1A1E\] {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+
+.theme-light .bg-zinc-900,
+.theme-light .bg-zinc-900\/90,
+.theme-light .bg-zinc-900\/80,
+.theme-light .bg-zinc-900\/50,
+.theme-light .bg-zinc-900\/60 {
+  background-color: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+}
+
+.theme-light .bg-zinc-800,
+.theme-light .bg-zinc-800\/80,
+.theme-light .bg-zinc-800\/50 {
+  background-color: #E2E8F0 !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* Border Adaptations */
+.theme-light .border-zinc-800,
+.theme-light .border-zinc-800\/80,
+.theme-light .border-zinc-700,
+.theme-light .border-zinc-700\/60,
+.theme-light .border-zinc-700\/40 {
+  border-color: #E2E8F0 !important;
+}
+
+/* Typography & Contrast */
+.theme-light .text-zinc-100,
+.theme-light .text-zinc-200 {
+  color: #0F172A !important;
+}
+
+.theme-light .text-zinc-300,
+.theme-light .text-zinc-400 {
+  color: #334155 !important;
+}
+
+.theme-light .text-zinc-500 {
+  color: #64748B !important;
+}
+
+/* Subtle Golden Contrast on Light Mode */
+.theme-light .text-\[\#C5A059\] {
+  color: #997A23 !important;
+}
+
+.theme-light .text-\[\#D4AF37\] {
+  color: #997A23 !important;
+}
+
+/* Inputs, Textareas and Dropdowns in Light Mode */
+.theme-light input:not([type="checkbox"]):not([type="radio"]),
+.theme-light select,
+.theme-light textarea {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+.theme-light input::placeholder,
+.theme-light textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Modals & Dialogs in Light Mode */
+.theme-light .bg-zinc-950,
+.theme-light .bg-\[\#141417\] {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+/* Card hover states */
+.theme-light .hover\:border-zinc-700:hover {
+  border-color: #CBD5E1 !important;
+}
+.theme-light .hover\:bg-zinc-800\/80:hover,
+.theme-light .hover\:bg-zinc-800:hover {
+  background-color: #E2E8F0 !important;
+}
+
+/* Footer & Sub-dividers */
+.theme-light footer {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+.theme-light .border-zinc-900 {
+  border-color: #E2E8F0 !important;
+}
+

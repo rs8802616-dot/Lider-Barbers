@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Crown, Bell, User, Scissors, ShieldAlert, ShieldCheck, Download, LogOut } from 'lucide-react';
+import { Crown, Bell, User, Scissors, ShieldAlert, ShieldCheck, Download, LogOut, Sun, Moon } from 'lucide-react';
 import { UserRole, AppNotification } from '../../types';
 
 export interface HeaderUser {
@@ -28,6 +28,10 @@ export interface HeaderProps {
   activeUserName?: string;
   /** Nome customizado da barbearia (padrão: Líder Barbers) */
   barbeariaNome?: string;
+  /** Tema ativo atual: 'dark' ou 'light' */
+  theme?: 'dark' | 'light';
+  /** Callback para alternar entre modo claro e escuro */
+  onToggleTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +44,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenInstall,
   activeUserName,
   barbeariaNome = 'Líder Barbers',
+  theme = 'dark',
+  onToggleTheme,
 }) => {
   // Papel do usuário logado (prioriza user.role conforme especificação)
   const activeRole: UserRole = user?.role || currentRole || 'cliente';
@@ -290,6 +296,24 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Download className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>Baixar o App</span>
+            </button>
+          )}
+
+          {/* ELEMENTO: Botão Alternador de Tema (Modo Claro / Modo Escuro) */}
+          {onToggleTheme && (
+            <button
+              type="button"
+              id="btn-theme-toggle"
+              onClick={onToggleTheme}
+              aria-label={theme === 'dark' ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'}
+              title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+              className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-[#D4AF37] transition-all shrink-0 active:scale-95 flex items-center justify-center"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-blue-500" />
+              )}
             </button>
           )}
 

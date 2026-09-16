@@ -29,8 +29,10 @@ import {
   subscribeNotifications,
   triggerBrowserNotification,
 } from './services/notificationService';
+import { useTheme } from './context/ThemeContext';
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
   // Active role: 'cliente' | 'barbeiro' | 'administrador' | 'super_admin'
   const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
 
@@ -258,7 +260,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0F] text-zinc-100 flex flex-col selection:bg-[#D4AF37] selection:text-zinc-950 font-sans">
+    <div
+      className={`min-h-screen ${
+        theme === 'light' ? 'bg-[#F4F5F7] text-zinc-900' : 'bg-[#0D0D0F] text-zinc-100'
+      } flex flex-col selection:bg-[#D4AF37] selection:text-zinc-950 font-sans transition-colors duration-200`}
+    >
       {/* Top Bar with Role Switcher & Controls */}
       <Header
         user={{
@@ -288,11 +294,19 @@ export default function App() {
             ? 'Master (Dono)'
             : 'Admin Barbearia'
         }
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Content Area - Expansive website layout (100% full bleed on mobile, max-w-7xl on desktop) */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-6">
-        <div className="w-full bg-[#141417] sm:rounded-2xl border-y sm:border border-zinc-800/80 p-3 sm:p-6 lg:p-8 sm:shadow-2xl">
+        <div
+          className={`w-full ${
+            theme === 'light'
+              ? 'bg-white border-zinc-200 shadow-lg'
+              : 'bg-[#141417] border-zinc-800/80 sm:shadow-2xl'
+          } sm:rounded-2xl border-y sm:border p-3 sm:p-6 lg:p-8 transition-colors duration-200`}
+        >
           {currentRole === 'cliente' && (
             <ClientModule
               currentUser={clientUser}
