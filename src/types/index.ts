@@ -22,6 +22,8 @@ export interface AdminBarbearia {
   nome: string;
   email: string;
   senha?: string;
+  pin?: string;
+  tokenAcesso?: string;
   barbeariaId: string;
   barbeariaNome: string;
   telefone?: string;
@@ -51,6 +53,8 @@ export interface Barbeiro {
   status: 'ativo' | 'inativo';
   telefone: string;
   email?: string;
+  pin?: string;
+  tokenAcesso?: string;
   isAdmin?: boolean; // Flag indicando se este barbeiro também é Administrador da barbearia
   avaliacao?: number;
   dataCriacao: string;

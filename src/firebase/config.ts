@@ -96,6 +96,7 @@ export const DEFAULT_BARBEIROS: Barbeiro[] = [
     status: 'ativo',
     telefone: '(11) 98765-4321',
     email: 'carlos.admin@liderbarbers.com.br',
+    pin: 'barber123',
     isAdmin: true, // Carlos atua como Barbeiro E também é Administrador da barbearia!
     avaliacao: 4.9,
     dataCriacao: new Date().toISOString(),
@@ -111,6 +112,7 @@ export const DEFAULT_BARBEIROS: Barbeiro[] = [
     status: 'ativo',
     telefone: '(11) 97654-3210',
     email: 'rafael.barber@liderbarbers.com.br',
+    pin: 'barber123',
     isAdmin: false,
     avaliacao: 4.8,
     dataCriacao: new Date().toISOString(),
@@ -126,6 +128,7 @@ export const DEFAULT_BARBEIROS: Barbeiro[] = [
     status: 'ativo',
     telefone: '(11) 96543-2109',
     email: 'lucas.barber@liderbarbers.com.br',
+    pin: 'barber123',
     isAdmin: false,
     avaliacao: 4.9,
     dataCriacao: new Date().toISOString(),

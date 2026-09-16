@@ -21,6 +21,11 @@ import {
   ChevronRight,
   Filter,
   LogOut,
+  Copy,
+  Key,
+  MessageCircle,
+  Share2,
+  ExternalLink,
 } from 'lucide-react';
 import { Barbeiro, Servico, Agendamento, AppointmentStatus } from '../../types';
 import { doc, updateDoc, setDoc, addDoc, collection, deleteDoc } from 'firebase/firestore';
@@ -28,6 +33,7 @@ import { db } from '../../firebase/config';
 import { sendNotification } from '../../services/notificationService';
 import { CopyBarberLinkButton } from '../common/CopyBarberLinkButton';
 import { ShareLinksCard } from '../common/ShareLinksCard';
+import { GeneratedAccessModal } from '../common/GeneratedAccessModal';
 
 interface AdminModuleProps {
   barbeiros: Barbeiro[];
@@ -60,6 +66,61 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   const [barberSpecialty, setBarberSpecialty] = useState<string>('');
   const [barberPhone, setBarberPhone] = useState<string>('');
   const [barberPhoto, setBarberPhoto] = useState<string>('');
+  const [barberPin, setBarberPin] = useState<string>('barber123');
+
+  // Modal para exibir o Link Exclusivo do Barbeiro gerado pelo Admin
+  const [createdBarberModalData, setCreatedBarberModalData] = useState<{
+    isOpen: boolean;
+    barberName: string;
+    accessUrl: string;
+    pin: string;
+    phone: string;
+  } | null>(null);
+
+  // Feedback de link de acesso do barbeiro copiado
+  const [copiedBarberAccessId, setCopiedBarberAccessId] = useState<string | null>(null);
+
+  const getBarberAccessUrl = (barber: Barbeiro) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const cleanUrl = `${origin}${pathname}`;
+    const pin = barber.pin || 'barber123';
+    return `${cleanUrl}?barbeiro=${barber.id}&chave=${pin}`;
+  };
+
+  const handleCopyBarberAccess = async (barber: Barbeiro) => {
+    const url = getBarberAccessUrl(barber);
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedBarberAccessId(barber.id);
+      setTimeout(() => setCopiedBarberAccessId(null), 2500);
+    } catch (err) {
+      console.error('Erro ao copiar link de acesso do barbeiro:', err);
+    }
+  };
+
+  const handleSendBarberWhatsApp = (barber: Barbeiro) => {
+    const url = getBarberAccessUrl(barber);
+    const pin = barber.pin || 'barber123';
+    const message = `Olá, ${barber.nome}! Segue o seu link de acesso exclusivo para gerenciar seus agendamentos, horários e faturamento no Líder Barbers:\n\n🔑 *Acesse sua agenda pelo link:*\n${url}\n\n📌 *Sua senha/PIN:* ${pin}\n\nSalve este link nos favoritos do seu celular!`;
+    const cleanPhone = barber.telefone ? barber.telefone.replace(/\D/g, '') : '';
+    const waUrl = cleanPhone
+      ? `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(message)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+  };
 
   // New Service Modal
   const [showServiceModal, setShowServiceModal] = useState<boolean>(false);
@@ -99,23 +160,44 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
     if (!barberName) return;
 
     const newId = `barb-${Date.now()}`;
+    const slug = barberName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const pin = barberPin.trim() || 'barber123';
+
     const newBarb: Barbeiro = {
       id: newId,
       nome: barberName,
+      slug,
       especialidade: barberSpecialty || 'Especialista em Cortes',
       descricao: 'Profissional qualificado Líder Barbers',
       foto: barberPhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       servicosIds: servicos.map((s) => s.id),
       status: 'ativo',
       telefone: barberPhone || '(11) 99999-8888',
+      pin,
       dataCriacao: new Date().toISOString(),
     };
 
     await setDoc(doc(db, 'barbeiros', newId), newBarb);
     setShowBarberModal(false);
+
+    // Gerar link exclusivo e abrir modal para o Admin copiar ou enviar via WhatsApp
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const cleanUrl = `${origin}${pathname}`;
+    const accessUrl = `${cleanUrl}?barbeiro=${newId}&chave=${pin}`;
+
+    setCreatedBarberModalData({
+      isOpen: true,
+      barberName: newBarb.nome,
+      accessUrl,
+      pin,
+      phone: newBarb.telefone || '',
+    });
+
     setBarberName('');
     setBarberSpecialty('');
     setBarberPhone('');
+    setBarberPin('barber123');
     onRefreshData();
   };
 
@@ -416,50 +498,32 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
           </div>
 
           {/* Barbers list as in mockup */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {barbeiros.map((barb) => {
               const isActive = barb.status === 'ativo';
               return (
                 <div
                   key={barb.id}
-                  className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 flex items-center justify-between"
+                  className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 flex flex-col justify-between space-y-3.5 hover:border-zinc-700 transition-all shadow-md"
                 >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={barb.foto}
-                      alt={barb.nome}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-zinc-700"
-                    />
-                    <div>
-                      <h4 className="text-xs font-bold text-zinc-100">{barb.nome}</h4>
-                      <p className="text-[11px] text-[#C5A059]">{barb.especialidade}</p>
-                      <p className="text-[10px] text-zinc-500">{barb.telefone}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={barb.foto}
+                        alt={barb.nome}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-zinc-700 shrink-0"
+                      />
+                      <div>
+                        <h4 className="text-xs font-bold text-zinc-100">{barb.nome}</h4>
+                        <p className="text-[11px] text-[#C5A059]">{barb.especialidade}</p>
+                        <p className="text-[10px] text-zinc-500">{barb.telefone}</p>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-                    <CopyBarberLinkButton
-                      barberId={barb.id}
-                      barberSlug={barb.slug}
-                      barberName={barb.nome}
-                      className="text-[11px]"
-                    />
-
-                    {barb.isAdmin && onSwitchToBarber && (
-                      <button
-                        type="button"
-                        onClick={() => onSwitchToBarber(barb.id)}
-                        className="text-[10px] font-bold px-2 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30 transition-all"
-                        title="Abrir agenda deste barbeiro"
-                      >
-                        Abrir Agenda
-                      </button>
-                    )}
 
                     <button
                       type="button"
                       onClick={() => handleToggleBarberStatus(barb)}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
                         isActive
                           ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
                           : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
@@ -467,6 +531,79 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                     >
                       {barb.status}
                     </button>
+                  </div>
+
+                  {/* Informação de Acesso e PIN do Barbeiro */}
+                  <div className="p-2.5 rounded-lg bg-zinc-900/90 border border-zinc-800 space-y-1 text-xs">
+                    <div className="flex items-center justify-between text-zinc-400">
+                      <span className="flex items-center gap-1.5 text-[11px]">
+                        <Key className="w-3.5 h-3.5 text-[#D4AF37]" />
+                        <span>PIN do Barbeiro:</span>
+                      </span>
+                      <code className="px-1.5 py-0.5 rounded bg-zinc-950 text-amber-300 font-mono text-[11px]">
+                        {barb.pin || 'barber123'}
+                      </code>
+                    </div>
+                  </div>
+
+                  {/* 1. AÇÕES EXCLUSIVAS: Link de Acesso do Barbeiro à Agenda */}
+                  <div className="space-y-1.5 pt-1 border-t border-zinc-800/80">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">
+                      Acesso deste Barbeiro à Agenda:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyBarberAccess(barb)}
+                        className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 text-[11px] font-semibold transition-all"
+                        title="Copiar link exclusivo para o barbeiro acessar a agenda"
+                      >
+                        {copiedBarberAccessId === barb.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-emerald-400 font-bold">Copiado!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-[#D4AF37]" />
+                            <span>Copiar Acesso</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSendBarberWhatsApp(barb)}
+                        className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-600/50 text-[11px] font-semibold transition-all"
+                        title="Enviar link de acesso direto para o WhatsApp do barbeiro"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                        <span>WhatsApp</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. Divulgação para Clientes & Abertura Direta */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-zinc-800/60">
+                    <div className="flex-1">
+                      <CopyBarberLinkButton
+                        barberId={barb.id}
+                        barberSlug={barb.slug}
+                        barberName={barb.nome}
+                        className="text-[11px] w-full"
+                      />
+                    </div>
+
+                    {onSwitchToBarber && (
+                      <button
+                        type="button"
+                        onClick={() => onSwitchToBarber(barb.id)}
+                        className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-all shrink-0"
+                        title="Abrir agenda deste barbeiro no painel"
+                      >
+                        Abrir Agenda
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -710,6 +847,23 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
                 />
               </div>
 
+              <div>
+                <label className="block text-zinc-300 font-semibold mb-1">
+                  Senha / PIN de Acesso do Barbeiro *
+                </label>
+                <input
+                  type="text"
+                  value={barberPin}
+                  onChange={(e) => setBarberPin(e.target.value)}
+                  placeholder="Ex: barber123 ou 1234"
+                  required
+                  className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100 focus:border-[#D4AF37] focus:outline-none font-mono"
+                />
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  O barbeiro usará este PIN ou o link exclusivo dele para entrar diretamente na agenda.
+                </p>
+              </div>
+
               <div className="pt-2">
                 <button
                   type="submit"
@@ -800,6 +954,20 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL: Link Exclusivo do Barbeiro Gerado com Sucesso */}
+      {createdBarberModalData && (
+        <GeneratedAccessModal
+          isOpen={createdBarberModalData.isOpen}
+          onClose={() => setCreatedBarberModalData(null)}
+          title="Acesso do Barbeiro Gerado com Sucesso"
+          recipientName={createdBarberModalData.barberName}
+          recipientRole="barbeiro"
+          accessUrl={createdBarberModalData.accessUrl}
+          pin={createdBarberModalData.pin}
+          phone={createdBarberModalData.phone}
+        />
       )}
     </div>
   );

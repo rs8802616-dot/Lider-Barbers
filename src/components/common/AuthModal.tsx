@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Lock, ShieldCheck, UserCheck, X, AlertCircle, Eye, EyeOff, Crown } from 'lucide-react';
-import { UserRole } from '../../types';
+import { UserRole, Barbeiro } from '../../types';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   targetRole: 'barbeiro' | 'administrador' | 'super_admin';
-  onSuccess: (role: 'barbeiro' | 'administrador' | 'super_admin') => void;
+  onSuccess: (role: 'barbeiro' | 'administrador' | 'super_admin', matchedBarberId?: string) => void;
+  barbeiros?: Barbeiro[];
+  activeBarberId?: string;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -14,6 +16,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   targetRole,
   onSuccess,
+  barbeiros = [],
+  activeBarberId,
 }) => {
   const [selectedRole, setSelectedRole] = useState<'barbeiro' | 'administrador' | 'super_admin'>(targetRole);
   const [email, setEmail] = useState('');
@@ -34,9 +38,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     setError(null);
 
+    const cleanPin = pin.trim();
+
     // PIN/Password validation
     if (selectedRole === 'super_admin') {
-      if (pin === 'master123' || pin === 'super123' || pin === '1234') {
+      if (cleanPin === 'master123' || cleanPin === 'super123' || cleanPin === '1234') {
         onSuccess('super_admin');
         onClose();
         setPin('');
@@ -44,7 +50,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setError('Senha Master incorreta. (Dica de teste: master123 ou 1234)');
       }
     } else if (selectedRole === 'administrador') {
-      if (pin === 'admin123' || pin === '1234') {
+      if (cleanPin === 'admin123' || cleanPin === '1234') {
         onSuccess('administrador');
         onClose();
         setPin('');
@@ -52,12 +58,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setError('Senha de Administrador incorreta. (Dica de teste: admin123 ou 1234)');
       }
     } else if (selectedRole === 'barbeiro') {
-      if (pin === 'barber123' || pin === '1234') {
-        onSuccess('barbeiro');
+      // Checar se o PIN bate com o barbeiro ativo ou algum barbeiro cadastrado
+      const matchedByPin = barbeiros.find((b) => b.pin && b.pin === cleanPin);
+      const activeBarb = barbeiros.find((b) => b.id === activeBarberId);
+
+      if (cleanPin === 'barber123' || cleanPin === '1234') {
+        onSuccess('barbeiro', activeBarberId);
+        onClose();
+        setPin('');
+      } else if (activeBarb && activeBarb.pin === cleanPin) {
+        onSuccess('barbeiro', activeBarb.id);
+        onClose();
+        setPin('');
+      } else if (matchedByPin) {
+        onSuccess('barbeiro', matchedByPin.id);
         onClose();
         setPin('');
       } else {
-        setError('Senha de Barbeiro incorreta. (Dica de teste: barber123 ou 1234)');
+        setError('Senha ou PIN de Barbeiro incorreta. (Dica de teste: barber123 ou 1234)');
       }
     }
   };

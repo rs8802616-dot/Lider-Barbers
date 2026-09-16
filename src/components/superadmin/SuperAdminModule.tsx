@@ -19,6 +19,11 @@ import {
   Crown,
   Sparkles,
   LogOut,
+  Copy,
+  Check,
+  MessageCircle,
+  ExternalLink,
+  Share2,
 } from 'lucide-react';
 import { AdminBarbearia, BarbeariaUnidade } from '../../types';
 import { db } from '../../firebase/config';
@@ -30,6 +35,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { ShareLinksCard } from '../common/ShareLinksCard';
+import { GeneratedAccessModal } from '../common/GeneratedAccessModal';
 
 interface SuperAdminModuleProps {
   onRefreshData?: () => void;
@@ -109,6 +115,61 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+
+  // Modal para exibir o Link Exclusivo gerado logo após o cadastro
+  const [createdAdminModalData, setCreatedAdminModalData] = useState<{
+    isOpen: boolean;
+    adminName: string;
+    barbeariaName: string;
+    accessUrl: string;
+    pin: string;
+    phone: string;
+  } | null>(null);
+
+  // Feedback de link copiado no card do admin
+  const [copiedAdminId, setCopiedAdminId] = useState<string | null>(null);
+
+  const getAdminAccessUrl = (admin: AdminBarbearia) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const cleanUrl = `${origin}${pathname}`;
+    const pin = admin.senha || admin.pin || 'admin123';
+    return `${cleanUrl}?admin=${admin.id}&chave=${pin}`;
+  };
+
+  const handleCopyAdminLink = async (admin: AdminBarbearia) => {
+    const url = getAdminAccessUrl(admin);
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedAdminId(admin.id);
+      setTimeout(() => setCopiedAdminId(null), 2500);
+    } catch (err) {
+      console.error('Erro ao copiar link do admin:', err);
+    }
+  };
+
+  const handleSendAdminWhatsApp = (admin: AdminBarbearia) => {
+    const url = getAdminAccessUrl(admin);
+    const pin = admin.senha || admin.pin || 'admin123';
+    const message = `Olá, ${admin.nome}! Seu acesso exclusivo como Administrador da barbearia *${admin.barbeariaNome}* está pronto.\n\n🔑 *Acesse seu painel gerencial pelo link:*\n${url}\n\n📌 *Sua senha/PIN:* ${pin}\n\nSalve este link nos seus favoritos do celular para gerenciar barbeiros, serviços e agendamentos!`;
+    const cleanPhone = admin.telefone ? admin.telefone.replace(/\D/g, '') : '';
+    const waUrl = cleanPhone
+      ? `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(message)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+  };
 
   // Load data from Firestore or fallback gracefully
   const loadSuperAdminData = async () => {
@@ -228,7 +289,21 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
 
       setAdmins((prev) => [newAdmin, ...prev]);
       setSubmitSuccess(`Administrador "${newAdmin.nome}" cadastrado com sucesso!`);
-      setTimeout(() => setSubmitSuccess(null), 3500);
+
+      // Abrir modal com o link gerado para envio imediato pelo dono
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+      const cleanUrl = `${origin}${pathname}`;
+      const accessUrl = `${cleanUrl}?admin=${newAdminId}&chave=${adminSenha.trim()}`;
+
+      setCreatedAdminModalData({
+        isOpen: true,
+        adminName: newAdmin.nome,
+        barbeariaName: targetBarbeariaNome,
+        accessUrl,
+        pin: adminSenha.trim(),
+        phone: newAdmin.telefone || '',
+      });
 
       // Reset form
       setAdminNome('');
@@ -463,6 +538,47 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
                         Contato: {admin.telefone}
                       </p>
                     )}
+                    <div className="flex items-center gap-2 text-zinc-400 pt-1 border-t border-zinc-800/60">
+                      <Key className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Senha/PIN: <code className="px-1.5 py-0.5 rounded bg-zinc-950 text-amber-300 font-mono text-[10px]">{admin.senha || admin.pin || 'admin123'}</code></span>
+                    </div>
+                  </div>
+
+                  {/* Ações de Envio do Link Exclusivo do Admin */}
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider block">
+                      Link de Acesso Exclusivo deste Administrador:
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAdminLink(admin)}
+                        className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700 text-xs font-semibold transition-all shadow-sm"
+                        title="Copiar o link direto de acesso deste administrador"
+                      >
+                        {copiedAdminId === admin.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-emerald-400 font-bold">Copiado!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-[#D4AF37]" />
+                            <span>Copiar Link</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSendAdminWhatsApp(admin)}
+                        className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-600/50 text-xs font-semibold transition-all shadow-sm"
+                        title="Enviar link de acesso direto para o WhatsApp do administrador"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                        <span>WhatsApp</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -648,6 +764,21 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL: Link Exclusivo do Administrador Gerado */}
+      {createdAdminModalData && (
+        <GeneratedAccessModal
+          isOpen={createdAdminModalData.isOpen}
+          onClose={() => setCreatedAdminModalData(null)}
+          title="Acesso do Administrador Gerado com Sucesso"
+          recipientName={createdAdminModalData.adminName}
+          recipientRole="administrador"
+          establishmentName={createdAdminModalData.barbeariaName}
+          accessUrl={createdAdminModalData.accessUrl}
+          pin={createdAdminModalData.pin}
+          phone={createdAdminModalData.phone}
+        />
       )}
     </div>
   );
