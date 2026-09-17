@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Scissors,
   Sparkles,
@@ -55,10 +55,9 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
   // Wizard steps: 1 = Servico, 2 = Barbeiro, 3 = Data e Horário, 4 = Confirmar
   // Se veio por link direto do barbeiro, inicia no passo 1 (Serviço) ou 3 (Data) com o barbeiro já selecionado
   const [wizardStep, setWizardStep] = useState<number>(initialBarberId ? 1 : 1);
-  const [selectedServicoId, setSelectedServicoId] = useState<string>(() => {
-    return servicos[0]?.id || '';
-  });
-  const [selectedBarbeiroId, setSelectedBarbeiroId] = useState<string>(() => {
+
+  // User explicit selections (null defaults to preferred, invited, or first available)
+  const [userSelectedBarbeiroId, setUserSelectedBarbeiroId] = useState<string | null>(() => {
     if (initialBarberId && barbeiros.some((b) => b.id === initialBarberId)) {
       return initialBarberId;
     }
@@ -66,41 +65,77 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
     if (saved && barbeiros.some((b) => b.id === saved)) {
       return saved;
     }
-    return barbeiros[0]?.id || '';
-  });
-
-  // Track if user arrived through direct barber invitation link
-  const [invitedBarber, setInvitedBarber] = useState<Barbeiro | null>(() => {
-    if (initialBarberId) {
-      return barbeiros.find((b) => b.id === initialBarberId) || null;
-    }
     return null;
   });
 
-  // Update selection if initialBarberId or lists change
-  useEffect(() => {
-    if (initialBarberId) {
-      const found = barbeiros.find((b) => b.id === initialBarberId);
-      if (found) {
-        setSelectedBarbeiroId(found.id);
-        setInvitedBarber(found);
-        localStorage.setItem('lider_prefered_barber_id', found.id);
+  const [userSelectedServicoId, setUserSelectedServicoId] = useState<string | null>(null);
+  const [isInviteDismissed, setIsInviteDismissed] = useState<boolean>(false);
+
+  // Derived active barber - zero useEffect dependencies, no cascading state updates
+  const selectedBarbeiro = useMemo(() => {
+    if (userSelectedBarbeiroId) {
+      const found = barbeiros.find((b) => b.id === userSelectedBarbeiroId);
+      if (found) return found;
+    }
+    if (initialBarberId && !isInviteDismissed) {
+      const found = barbeiros.find(
+        (b) =>
+          b.id === initialBarberId ||
+          (b.slug && b.slug.toLowerCase() === initialBarberId.toLowerCase()) ||
+          b.nome.toLowerCase().replace(/\s+/g, '-') === initialBarberId.toLowerCase()
+      );
+      if (found) return found;
+    }
+    try {
+      const saved = localStorage.getItem('lider_prefered_barber_id');
+      if (saved) {
+        const found = barbeiros.find((b) => b.id === saved);
+        if (found) return found;
       }
-    } else if (!selectedBarbeiroId && barbeiros.length > 0) {
-      setSelectedBarbeiroId(barbeiros[0].id);
-    }
-  }, [initialBarberId, barbeiros, selectedBarbeiroId]);
+    } catch {}
+    return barbeiros[0] || null;
+  }, [userSelectedBarbeiroId, initialBarberId, isInviteDismissed, barbeiros]);
 
-  useEffect(() => {
-    if (!selectedServicoId && servicos.length > 0) {
-      setSelectedServicoId(servicos[0].id);
-    }
-  }, [servicos, selectedServicoId]);
+  const selectedBarbeiroId = selectedBarbeiro?.id || '';
 
-  // Save selected barber preference whenever it changes
+  // Derived active service - zero useEffect dependencies
+  const selectedServico = useMemo(() => {
+    if (userSelectedServicoId) {
+      const found = servicos.find((s) => s.id === userSelectedServicoId);
+      if (found) return found;
+    }
+    return servicos[0] || null;
+  }, [userSelectedServicoId, servicos]);
+
+  const selectedServicoId = selectedServico?.id || '';
+
+  // Track if user arrived through direct barber invitation link
+  const invitedBarber = useMemo(() => {
+    if (isInviteDismissed || !initialBarberId) return null;
+    return (
+      barbeiros.find(
+        (b) =>
+          b.id === initialBarberId ||
+          (b.slug && b.slug.toLowerCase() === initialBarberId.toLowerCase()) ||
+          b.nome.toLowerCase().replace(/\s+/g, '-') === initialBarberId.toLowerCase()
+      ) || null
+    );
+  }, [isInviteDismissed, initialBarberId, barbeiros]);
+
+  // Setters for user interactions
+  const setSelectedBarbeiroId = (barberId: string) => {
+    setUserSelectedBarbeiroId(barberId);
+    try {
+      localStorage.setItem('lider_prefered_barber_id', barberId);
+    } catch {}
+  };
+
+  const setSelectedServicoId = (servicoId: string) => {
+    setUserSelectedServicoId(servicoId);
+  };
+
   const handleSelectBarber = (barberId: string) => {
     setSelectedBarbeiroId(barberId);
-    localStorage.setItem('lider_prefered_barber_id', barberId);
   };
 
   // Date selection (default today or tomorrow)
@@ -127,36 +162,40 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
   // Appointments filter tab
   const [appointmentsTab, setAppointmentsTab] = useState<'proximos' | 'historico'>('proximos');
 
-  // Selected service and barber objects
-  const selectedServico = servicos.find((s) => s.id === selectedServicoId) || servicos[0];
-  const selectedBarbeiro = barbeiros.find((b) => b.id === selectedBarbeiroId) || barbeiros[0];
-
   // Fetch slots whenever barber, date, or service changes
+  const servicoId = selectedServico?.id || '';
+  const servicoDuracao = selectedServico?.duracaoMinutos || 30;
+
   useEffect(() => {
-    if (selectedBarbeiroId && selectedDate && selectedServico) {
-      let isMounted = true;
-      setLoadingSlots(true);
-      getAvailableSlots(selectedBarbeiroId, selectedDate, selectedServico.duracaoMinutos || 30)
-        .then((slots) => {
-          if (isMounted) {
-            setAvailableSlots(slots);
-            // If currently selected time is not in available slots, pick first available
-            const firstAvail = slots.find((s) => s.available);
-            if (firstAvail && !slots.some((s) => s.time === selectedTime && s.available)) {
-              setSelectedTime(firstAvail.time);
-            }
-            setLoadingSlots(false);
-          }
-        })
-        .catch((err) => {
-          console.error('Error fetching slots:', err);
-          if (isMounted) setLoadingSlots(false);
-        });
-      return () => {
-        isMounted = false;
-      };
+    if (!selectedBarbeiroId || !selectedDate || !servicoId) {
+      setAvailableSlots([]);
+      return;
     }
-  }, [selectedBarbeiroId, selectedDate, selectedServico, agendamentos]);
+
+    let isMounted = true;
+    setLoadingSlots(true);
+    getAvailableSlots(selectedBarbeiroId, selectedDate, servicoDuracao)
+      .then((slots) => {
+        if (isMounted) {
+          setAvailableSlots(slots);
+          const firstAvail = slots.find((s) => s.available);
+          setSelectedTime((prevTime) => {
+            if (slots.some((s) => s.time === prevTime && s.available)) {
+              return prevTime;
+            }
+            return firstAvail ? firstAvail.time : prevTime;
+          });
+          setLoadingSlots(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching slots:', err);
+        if (isMounted) setLoadingSlots(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedBarbeiroId, selectedDate, servicoId, servicoDuracao]);
 
   // Handle Booking Confirmation
   const handleConfirmBooking = async () => {
@@ -462,7 +501,7 @@ export const ClientModule: React.FC<ClientModuleProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setInvitedBarber(null)}
+                  onClick={() => setIsInviteDismissed(true)}
                   className="px-3 py-2 rounded-xl border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs transition-colors"
                   title="Ver todos os barbeiros"
                 >

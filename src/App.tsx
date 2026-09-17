@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   collection,
   onSnapshot,
@@ -41,18 +41,50 @@ export default function App() {
   const [initialClientTab, setInitialClientTab] = useState<'home' | 'agendar' | 'agendamentos' | 'perfil'>('home');
 
   // Currently logged-in / active barber for BarberModule (supports switching if multiple barbers or admin is also a barber)
-  const [activeBarberId, setActiveBarberId] = useState<string>('barb-carlos');
+  const [activeBarberId, setActiveBarberId] = useState<string>('');
 
   // Authenticated roles tracker to ensure clientes cannot leak into barber, admin, or master views
   const [unlockedRoles, setUnlockedRoles] = useState<{
     barbeiro: boolean;
     administrador: boolean;
     super_admin: boolean;
-  }>({
-    barbeiro: false,
-    administrador: false,
-    super_admin: false,
+  }>(() => {
+    try {
+      const saved = sessionStorage.getItem('lider_unlocked_roles');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      barbeiro: false,
+      administrador: false,
+      super_admin: false,
+    };
   });
+
+  // Core Data States
+  const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
+  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [disponibilidades, setDisponibilidades] = useState<Disponibilidade[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const unlockedRolesRef = useRef(unlockedRoles);
+  unlockedRolesRef.current = unlockedRoles;
+
+  const barbeirosRef = useRef(barbeiros);
+  barbeirosRef.current = barbeiros;
+
+  const isRoleUnlocked = (role: 'barbeiro' | 'administrador' | 'super_admin'): boolean => {
+    if (unlockedRolesRef.current[role]) return true;
+    try {
+      const saved = sessionStorage.getItem('lider_unlocked_roles');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Boolean(parsed[role]);
+      }
+    } catch {}
+    return false;
+  };
+
   const [authModalState, setAuthModalState] = useState<{
     isOpen: boolean;
     targetRole: 'barbeiro' | 'administrador' | 'super_admin';
@@ -67,13 +99,6 @@ export default function App() {
   // Notifications modal
   const [isNotifModalOpen, setIsNotifModalOpen] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-
-  // Core Data States
-  const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
-  const [servicos, setServicos] = useState<Servico[]>([]);
-  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  const [disponibilidades, setDisponibilidades] = useState<Disponibilidade[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Dynamic client profile from localStorage or empty clean state
   const savedClientName = typeof window !== 'undefined' ? localStorage.getItem('lider_client_nome') : null;
@@ -92,103 +117,196 @@ export default function App() {
   const barberUser = barbeiros.find((b) => b.id === activeBarberId) || barbeiros[0] || null;
 
   // Route Dispatcher: handles Query Params (?admin=ID, ?barbeiro=ID, ?master=1, ?chave=...), hashes (#/admin, etc.), and clean routes
+  const handleLocationChange = useCallback(() => {
+    const pathname = window.location.pathname.toLowerCase();
+    const search = window.location.search;
+    const hash = window.location.hash.toLowerCase();
+    const params = new URLSearchParams(search);
+
+    const chave = (params.get('chave') || params.get('token') || '').trim();
+
+    // 1. Link Exclusivo do Barbeiro (?barbeiro=ID, ?barbeiro=1, ?barber=..., ?painel_barbeiro=..., #/barbeiro)
+    const rawBarberParam = (
+      params.get('barbeiro') ||
+      params.get('painel_barbeiro') ||
+      params.get('barber') ||
+      ''
+    ).trim();
+    const isBarberHash = hash.includes('barbeiro') || hash.includes('barber');
+    const isBarberRoute = pathname === '/barbeiro';
+
+    if (rawBarberParam || isBarberHash || isBarberRoute) {
+      // Verifica se é um ID ou slug de um barbeiro específico
+      const isSpecific = rawBarberParam && !['1', 'true'].includes(rawBarberParam);
+      let targetBarber: Barbeiro | undefined;
+      if (isSpecific) {
+        targetBarber = barbeirosRef.current.find(
+          (b) =>
+            b.id.toLowerCase() === rawBarberParam.toLowerCase() ||
+            (b.slug && b.slug.toLowerCase() === rawBarberParam.toLowerCase()) ||
+            b.nome.toLowerCase().replace(/\s+/g, '-') === rawBarberParam.toLowerCase()
+        );
+      }
+
+      if (targetBarber) {
+        setActiveBarberId((prev) => (prev === targetBarber.id ? prev : targetBarber.id));
+      }
+
+      // Validação da chave/PIN do barbeiro
+      const cleanChaveLower = chave.toLowerCase();
+      const isAuthedByPin =
+        ['barber123', 'barbeiro123', 'barber', '1234', '123456'].includes(cleanChaveLower) ||
+        (targetBarber?.pin && chave === targetBarber.pin);
+
+      if (isAuthedByPin || isRoleUnlocked('barbeiro')) {
+        setUnlockedRoles((prev) => {
+          if (prev.barbeiro) return prev;
+          const updated = { ...prev, barbeiro: true };
+          try {
+            sessionStorage.setItem('lider_unlocked_roles', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+        unlockedRolesRef.current = { ...unlockedRolesRef.current, barbeiro: true };
+        setAuthModalState((prev) => (prev.isOpen ? { ...prev, isOpen: false } : prev));
+        setCurrentRole((prev) => (prev === 'barbeiro' ? prev : 'barbeiro'));
+      } else {
+        setAuthModalState((prev) =>
+          prev.isOpen && prev.targetRole === 'barbeiro'
+            ? prev
+            : { isOpen: true, targetRole: 'barbeiro' }
+        );
+      }
+      return;
+    }
+
+    // 2. Link Exclusivo do Dono do Sistema / Super Admin (?master=1, ?dono=1, ?super-admin=1, #/master)
+    const isSuperAdminParam =
+      params.get('master') === '1' ||
+      params.get('master') === 'true' ||
+      params.get('dono') === '1' ||
+      params.get('dono') === 'true' ||
+      params.get('superadmin') === '1' ||
+      params.get('super_admin') === '1' ||
+      params.get('super-admin') === '1';
+    const isSuperAdminHash = hash.includes('master') || hash.includes('super-admin') || hash.includes('superadmin') || hash.includes('dono');
+    const isSuperAdminRoute = pathname === '/super-admin' || pathname === '/superadmin' || pathname === '/master';
+
+    if (isSuperAdminParam || isSuperAdminHash || isSuperAdminRoute) {
+      const cleanChaveLower = chave.toLowerCase();
+      const isAuthedByPin =
+        ['master123', 'master', 'super123', 'superadmin', '1234', '123456', 'admin', 'admin123', 'dono', 'dono123'].includes(cleanChaveLower) ||
+        chave === localStorage.getItem('lider_master_pin');
+
+      if (isAuthedByPin || isRoleUnlocked('super_admin')) {
+        setUnlockedRoles((prev) => {
+          if (prev.super_admin) return prev;
+          const updated = { ...prev, super_admin: true };
+          try {
+            sessionStorage.setItem('lider_unlocked_roles', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+        unlockedRolesRef.current = { ...unlockedRolesRef.current, super_admin: true };
+        setAuthModalState((prev) => (prev.isOpen ? { ...prev, isOpen: false } : prev));
+        setCurrentRole((prev) => (prev === 'super_admin' ? prev : 'super_admin'));
+      } else {
+        setAuthModalState((prev) =>
+          prev.isOpen && prev.targetRole === 'super_admin'
+            ? prev
+            : { isOpen: true, targetRole: 'super_admin' }
+        );
+      }
+      return;
+    }
+
+    // 3. Link Exclusivo do Lojista / Administrador da Barbearia (?admin=ID, ?admin=1, ?adminId=..., #/admin)
+    const rawAdminParam = (params.get('admin') || params.get('adminid') || params.get('gerente') || '').trim();
+    const isAdminHash = hash.includes('admin') || hash.includes('administrador') || hash.includes('gerente');
+    const isAdminRoute = pathname === '/admin' || pathname === '/administrador' || pathname === '/gerente';
+
+    if (rawAdminParam || isAdminHash || isAdminRoute) {
+      const cleanChaveLower = chave.toLowerCase();
+      const isAuthedByPin =
+        ['admin123', 'admin', 'gerente123', '1234', '123456', 'master123'].includes(cleanChaveLower) ||
+        chave === localStorage.getItem('lider_admin_pin') ||
+        (chave && rawAdminParam && !['1', 'true'].includes(rawAdminParam));
+
+      if (isAuthedByPin || isRoleUnlocked('administrador')) {
+        setUnlockedRoles((prev) => {
+          if (prev.administrador) return prev;
+          const updated = { ...prev, administrador: true };
+          try {
+            sessionStorage.setItem('lider_unlocked_roles', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+        unlockedRolesRef.current = { ...unlockedRolesRef.current, administrador: true };
+        setAuthModalState((prev) => (prev.isOpen ? { ...prev, isOpen: false } : prev));
+        setCurrentRole((prev) => (prev === 'administrador' ? prev : 'administrador'));
+      } else {
+        setAuthModalState((prev) =>
+          prev.isOpen && prev.targetRole === 'administrador'
+            ? prev
+            : { isOpen: true, targetRole: 'administrador' }
+        );
+      }
+      return;
+    }
+
+    // 4. Link Direto de Divulgação do Barbeiro para CLIENTES Agendarem (/b/:slug, ?b=slug, ?agendar_com=slug)
+    const bMatch = pathname.match(/^\/b\/(.+)$/);
+    const bQuerySlug = params.get('b') || params.get('agendar_com');
+    const rawSlug = bMatch ? bMatch[1] : bQuerySlug;
+
+    if (rawSlug) {
+      const slugOrId = decodeURIComponent(rawSlug).trim().toLowerCase();
+      const matchedBarber = barbeirosRef.current.find(
+        (b) =>
+          (b.slug && b.slug.toLowerCase() === slugOrId) ||
+          b.id.toLowerCase() === slugOrId ||
+          b.nome.toLowerCase().replace(/\s+/g, '-') === slugOrId
+      );
+
+      if (matchedBarber) {
+        setInvitedBarberId((prev) => (prev === matchedBarber.id ? prev : matchedBarber.id));
+        localStorage.setItem('lider_prefered_barber_id', matchedBarber.id);
+        setInitialClientTab((prev) => (prev === 'agendar' ? prev : 'agendar'));
+        setCurrentRole((prev) => (prev === 'cliente' ? prev : 'cliente'));
+        return;
+      }
+    }
+
+    // 5. Rota Direta de Agendamento do Cliente (/agendar ou ?agendar=1)
+    if (pathname === '/agendar' || params.get('agendar') === '1') {
+      setInitialClientTab((prev) => (prev === 'agendar' ? prev : 'agendar'));
+      setCurrentRole((prev) => (prev === 'cliente' ? prev : 'cliente'));
+      return;
+    }
+
+    // 6. Rota Pública Padrão da Vitrine da Loja (/ ou /cliente sem parâmetros especiais)
+    setCurrentRole((prev) => (prev === 'cliente' ? prev : 'cliente'));
+  }, []);
+
   useEffect(() => {
-    const handleLocationChange = () => {
-      const pathname = window.location.pathname.toLowerCase();
+    handleLocationChange();
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, [handleLocationChange]);
+
+  // Sync barber link when barbers list finishes loading
+  useEffect(() => {
+    if (barbeiros.length > 0) {
       const search = window.location.search;
-      const hash = window.location.hash.toLowerCase();
+      const pathname = window.location.pathname.toLowerCase();
       const params = new URLSearchParams(search);
-
-      const chave = (params.get('chave') || params.get('token') || '').trim();
-
-      // 1. Link Exclusivo do Barbeiro (?barbeiro=ID, ?barbeiro=1, ?barber=..., ?painel_barbeiro=..., #/barbeiro)
-      const rawBarberParam = (
-        params.get('barbeiro') ||
-        params.get('painel_barbeiro') ||
-        params.get('barber') ||
-        ''
-      ).trim();
-      const isBarberHash = hash.includes('barbeiro') || hash.includes('barber');
-      const isBarberRoute = pathname === '/barbeiro';
-
-      if (rawBarberParam || isBarberHash || isBarberRoute) {
-        // Verifica se é um ID ou slug de um barbeiro específico
-        const isSpecific = rawBarberParam && !['1', 'true'].includes(rawBarberParam);
-        let targetBarber: Barbeiro | undefined;
-        if (isSpecific) {
-          targetBarber = barbeiros.find(
-            (b) =>
-              b.id.toLowerCase() === rawBarberParam.toLowerCase() ||
-              (b.slug && b.slug.toLowerCase() === rawBarberParam.toLowerCase()) ||
-              b.nome.toLowerCase().replace(/\s+/g, '-') === rawBarberParam.toLowerCase()
-          );
-        }
-
-        if (targetBarber) {
-          setActiveBarberId(targetBarber.id);
-        }
-
-        // Validação da chave/PIN do barbeiro
-        const isAuthedByPin =
-          chave === 'barber123' ||
-          chave === '1234' ||
-          (targetBarber?.pin && chave === targetBarber.pin);
-
-        if (isAuthedByPin || unlockedRoles.barbeiro) {
-          setUnlockedRoles((prev) => ({ ...prev, barbeiro: true }));
-          setCurrentRole('barbeiro');
-        } else {
-          setAuthModalState({ isOpen: true, targetRole: 'barbeiro' });
-        }
-        return;
-      }
-
-      // 2. Link Exclusivo do Dono do Sistema / Super Admin (?master=1, ?dono=1, ?super-admin=1, #/master)
-      const isSuperAdminParam =
-        params.get('master') === '1' ||
-        params.get('master') === 'true' ||
-        params.get('dono') === '1' ||
-        params.get('dono') === 'true' ||
-        params.get('super-admin') === '1';
-      const isSuperAdminHash = hash.includes('master') || hash.includes('super-admin') || hash.includes('dono');
-      const isSuperAdminRoute = pathname === '/super-admin' || pathname === '/master';
-
-      if (isSuperAdminParam || isSuperAdminHash || isSuperAdminRoute) {
-        const isAuthedByPin = chave === 'master123' || chave === 'super123' || chave === '1234';
-        if (isAuthedByPin || unlockedRoles.super_admin) {
-          setUnlockedRoles((prev) => ({ ...prev, super_admin: true }));
-          setCurrentRole('super_admin');
-        } else {
-          setAuthModalState({ isOpen: true, targetRole: 'super_admin' });
-        }
-        return;
-      }
-
-      // 3. Link Exclusivo do Lojista / Administrador da Barbearia (?admin=ID, ?admin=1, ?adminId=..., #/admin)
-      const rawAdminParam = (params.get('admin') || params.get('adminid') || '').trim();
-      const isAdminHash = hash.includes('admin') || hash.includes('administrador');
-      const isAdminRoute = pathname === '/admin' || pathname === '/administrador';
-
-      if (rawAdminParam || isAdminHash || isAdminRoute) {
-        const isAuthedByPin =
-          chave === 'admin123' ||
-          chave === '1234' ||
-          (chave && rawAdminParam && !['1', 'true'].includes(rawAdminParam));
-
-        if (isAuthedByPin || unlockedRoles.administrador) {
-          setUnlockedRoles((prev) => ({ ...prev, administrador: true }));
-          setCurrentRole('administrador');
-        } else {
-          setAuthModalState({ isOpen: true, targetRole: 'administrador' });
-        }
-        return;
-      }
-
-      // 4. Link Direto de Divulgação do Barbeiro para CLIENTES Agendarem (/b/:slug, ?b=slug, ?agendar_com=slug)
       const bMatch = pathname.match(/^\/b\/(.+)$/);
       const bQuerySlug = params.get('b') || params.get('agendar_com');
       const rawSlug = bMatch ? bMatch[1] : bQuerySlug;
-
       if (rawSlug) {
         const slugOrId = decodeURIComponent(rawSlug).trim().toLowerCase();
         const matchedBarber = barbeiros.find(
@@ -197,36 +315,12 @@ export default function App() {
             b.id.toLowerCase() === slugOrId ||
             b.nome.toLowerCase().replace(/\s+/g, '-') === slugOrId
         );
-
         if (matchedBarber) {
-          setInvitedBarberId(matchedBarber.id);
-          localStorage.setItem('lider_prefered_barber_id', matchedBarber.id);
-          setInitialClientTab('agendar');
-          setCurrentRole('cliente');
-          return;
+          setInvitedBarberId((prev) => (prev === matchedBarber.id ? prev : matchedBarber.id));
         }
       }
-
-      // 5. Rota Direta de Agendamento do Cliente (/agendar ou ?agendar=1)
-      if (pathname === '/agendar' || params.get('agendar') === '1') {
-        setInitialClientTab('agendar');
-        setCurrentRole('cliente');
-        return;
-      }
-
-      // 6. Rota Pública Padrão da Vitrine da Loja (/ ou /cliente sem parâmetros especiais)
-      // O cliente final não vê nenhum botão, formulário ou link que leve ao painel
-      setCurrentRole('cliente');
-    };
-
-    handleLocationChange();
-    window.addEventListener('popstate', handleLocationChange);
-    window.addEventListener('hashchange', handleLocationChange);
-    return () => {
-      window.removeEventListener('popstate', handleLocationChange);
-      window.removeEventListener('hashchange', handleLocationChange);
-    };
-  }, [barbeiros, unlockedRoles]);
+    }
+  }, [barbeiros.length]);
 
   // Bootstrap Firebase & Seed Data
   useEffect(() => {
@@ -244,25 +338,50 @@ export default function App() {
     // 4. Firestore Real-Time Subscriptions
     const unsubServicos = onSnapshot(collection(db, 'servicos'), (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Servico));
-      setServicos(list);
+      setServicos((prev) => {
+        if (prev.length === list.length && prev.every((s, i) => s.id === list[i].id && s.preco === list[i].preco && s.nome === list[i].nome)) {
+          return prev;
+        }
+        return list;
+      });
     });
 
     const unsubBarbeiros = onSnapshot(collection(db, 'barbeiros'), (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Barbeiro));
-      setBarbeiros(list);
+      setBarbeiros((prev) => {
+        if (prev.length === list.length && prev.every((b, i) => b.id === list[i].id && b.nome === list[i].nome && b.pin === list[i].pin)) {
+          return prev;
+        }
+        return list;
+      });
+      if (list.length > 0) {
+        setActiveBarberId((prev) => (list.some((b) => b.id === prev) ? prev : list[0].id));
+      } else {
+        setActiveBarberId((prev) => (prev === '' ? prev : ''));
+      }
     });
 
     const unsubAgendamentos = onSnapshot(
       query(collection(db, 'agendamentos'), orderBy('data', 'asc')),
       (snap) => {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Agendamento));
-        setAgendamentos(list);
+        setAgendamentos((prev) => {
+          if (prev.length === list.length && prev.every((a, i) => a.id === list[i].id && a.status === list[i].status && a.data === list[i].data && a.horarioInicio === list[i].horarioInicio)) {
+            return prev;
+          }
+          return list;
+        });
       }
     );
 
     const unsubDisp = onSnapshot(collection(db, 'disponibilidades'), (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Disponibilidade));
-      setDisponibilidades(list);
+      setDisponibilidades((prev) => {
+        if (prev.length === list.length && prev.every((d, i) => d.id === list[i].id && d.barbeiroId === list[i].barbeiroId && d.horarioInicio === list[i].horarioInicio && d.horarioFim === list[i].horarioFim)) {
+          return prev;
+        }
+        return list;
+      });
     });
 
     return () => {
@@ -278,7 +397,7 @@ export default function App() {
     currentRole === 'cliente'
       ? clientUser.id
       : currentRole === 'barbeiro'
-      ? barberUser.id
+      ? (barberUser?.id || 'barbeiro')
       : 'admin';
 
   useEffect(() => {
@@ -330,12 +449,34 @@ export default function App() {
     if (matchedBarberId) {
       setActiveBarberId(matchedBarberId);
     }
-    setUnlockedRoles((prev) => ({ ...prev, [target]: true }));
+    setUnlockedRoles((prev) => {
+      const updated = { ...prev, [target]: true };
+      try {
+        sessionStorage.setItem('lider_unlocked_roles', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    unlockedRolesRef.current = {
+      ...unlockedRolesRef.current,
+      [target]: true,
+    };
+    setAuthModalState({ isOpen: false, targetRole: target });
     setCurrentRole(target);
   };
 
   const handleLogoutToClient = () => {
     try {
+      sessionStorage.removeItem('lider_unlocked_roles');
+      setUnlockedRoles({
+        barbeiro: false,
+        administrador: false,
+        super_admin: false,
+      });
+      unlockedRolesRef.current = {
+        barbeiro: false,
+        administrador: false,
+        super_admin: false,
+      };
       const cleanUrl = window.location.origin + window.location.pathname;
       window.history.pushState(null, '', cleanUrl);
     } catch {}
@@ -343,13 +484,16 @@ export default function App() {
   };
 
   const handleAuthClose = () => {
+    const roleToClose = authModalState.targetRole;
     setAuthModalState((prev) => ({ ...prev, isOpen: false }));
-    // Se o usuário cancelou o modal de autenticação sem sucesso, limpa a URL para a vitrine limpa do cliente
-    try {
-      const cleanUrl = window.location.origin + window.location.pathname;
-      window.history.replaceState(null, '', cleanUrl);
-    } catch {}
-    setCurrentRole('cliente');
+    // Se o usuário cancelou o modal de autenticação sem desbloquear a role, volta para a vitrine do cliente
+    if (!isRoleUnlocked(roleToClose)) {
+      try {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState(null, '', cleanUrl);
+      } catch {}
+      setCurrentRole('cliente');
+    }
   };
 
   return (
@@ -364,13 +508,13 @@ export default function App() {
           role: currentRole,
           nome:
             currentRole === 'cliente'
-              ? clientUser.nome
+              ? (clientUser.nome || 'Cliente')
               : currentRole === 'barbeiro'
-              ? barberUser.nome
+              ? (barberUser?.nome || 'Barbeiro')
               : currentRole === 'super_admin'
               ? 'Master (Dono)'
               : 'Admin Barbearia',
-          isAdmin: currentRole === 'barbeiro' ? barberUser.isAdmin : true,
+          isAdmin: currentRole === 'barbeiro' ? (barberUser?.isAdmin ?? true) : true,
         }}
         currentRole={currentRole}
         onRoleChange={handleRoleChangeAttempt}
@@ -380,9 +524,9 @@ export default function App() {
         onOpenInstall={() => setIsInstallModalOpen(true)}
         activeUserName={
           currentRole === 'cliente'
-            ? clientUser.nome
+            ? (clientUser.nome || 'Cliente')
             : currentRole === 'barbeiro'
-            ? barberUser.nome
+            ? (barberUser?.nome || 'Barbeiro')
             : currentRole === 'super_admin'
             ? 'Master (Dono)'
             : 'Admin Barbearia'

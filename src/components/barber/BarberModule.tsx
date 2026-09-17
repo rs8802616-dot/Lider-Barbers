@@ -77,6 +77,10 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
   const [intervalMinutes, setIntervalMinutes] = useState<number>(disponibilidade?.intervaloMinutos ?? 10);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
+  const dispKey = disponibilidade
+    ? `${disponibilidade.barbeiroId}|${disponibilidade.horarioInicio}|${disponibilidade.horarioFim}|${(disponibilidade.diasSemana || []).join(',')}|${disponibilidade.intervaloMinutos}`
+    : '';
+
   useEffect(() => {
     if (disponibilidade) {
       setWorkingDays(disponibilidade.diasSemana || [1, 2, 3, 4, 5, 6]);
@@ -84,7 +88,7 @@ export const BarberModule: React.FC<BarberModuleProps> = ({
       setEndTime(disponibilidade.horarioFim || '18:00');
       setIntervalMinutes(disponibilidade.intervaloMinutos ?? 10);
     }
-  }, [disponibilidade]);
+  }, [dispKey]);
 
   if (!currentBarber) {
     return (

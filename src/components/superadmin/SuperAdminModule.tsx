@@ -143,7 +143,7 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({
     }
     try {
       setIsPurging(true);
-      await purgeAllTestData();
+      await purgeAllTestData(true);
       await loadSuperAdminData();
       if (onRefreshData) onRefreshData();
       setPurgeMessage('Todos os dados de teste foram apagados com sucesso! O sistema está limpo.');

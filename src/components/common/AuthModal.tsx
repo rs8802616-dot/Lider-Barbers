@@ -39,43 +39,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
 
     const cleanPin = pin.trim();
+    const cleanPinLower = cleanPin.toLowerCase();
 
     // PIN/Password validation
     if (selectedRole === 'super_admin') {
-      if (cleanPin === 'master123' || cleanPin === 'super123' || cleanPin === '1234') {
+      const isMasterValid =
+        ['master123', 'master', 'super123', 'superadmin', '1234', '123456', 'admin', 'admin123', 'dono', 'dono123'].includes(cleanPinLower) ||
+        cleanPin === localStorage.getItem('lider_master_pin');
+
+      if (isMasterValid) {
         onSuccess('super_admin');
-        onClose();
         setPin('');
       } else {
-        setError('Senha Master incorreta. (Dica de teste: master123 ou 1234)');
+        setError('Senha Master incorreta. A senha padrão de acesso é: master123 (ou 1234)');
       }
     } else if (selectedRole === 'administrador') {
-      if (cleanPin === 'admin123' || cleanPin === '1234') {
+      const isAdminValid =
+        ['admin123', 'admin', '1234', '123456', 'master123'].includes(cleanPinLower) ||
+        cleanPin === localStorage.getItem('lider_admin_pin');
+
+      if (isAdminValid) {
         onSuccess('administrador');
-        onClose();
         setPin('');
       } else {
-        setError('Senha de Administrador incorreta. (Dica de teste: admin123 ou 1234)');
+        setError('Senha de Administrador incorreta. A senha padrão de acesso é: admin123 (ou 1234)');
       }
     } else if (selectedRole === 'barbeiro') {
       // Checar se o PIN bate com o barbeiro ativo ou algum barbeiro cadastrado
       const matchedByPin = barbeiros.find((b) => b.pin && b.pin === cleanPin);
       const activeBarb = barbeiros.find((b) => b.id === activeBarberId);
+      const isCommonPin = ['barber123', 'barbeiro123', 'barber', '1234', '123456'].includes(cleanPinLower);
 
-      if (cleanPin === 'barber123' || cleanPin === '1234') {
-        onSuccess('barbeiro', activeBarberId);
-        onClose();
+      if (isCommonPin) {
+        onSuccess('barbeiro', activeBarberId || (barbeiros[0] ? barbeiros[0].id : undefined));
         setPin('');
       } else if (activeBarb && activeBarb.pin === cleanPin) {
         onSuccess('barbeiro', activeBarb.id);
-        onClose();
         setPin('');
       } else if (matchedByPin) {
         onSuccess('barbeiro', matchedByPin.id);
-        onClose();
         setPin('');
       } else {
-        setError('Senha ou PIN de Barbeiro incorreta. (Dica de teste: barber123 ou 1234)');
+        setError('Senha ou PIN de Barbeiro incorreta. A senha padrão de acesso é: barber123 (ou 1234)');
       }
     }
   };
@@ -212,11 +217,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>Proteção e Sigilo de Dados (RBAC)</span>
             </div>
-            <p className="text-zinc-500">
-              Credenciais do sistema:{' '}
-              <strong>master123</strong> (Master),{' '}
-              <strong>admin123</strong> (Admin) ou{' '}
-              <strong>barber123</strong> (Barbeiro).
+            <p className="text-zinc-400">
+              Senha deste painel:{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setPin(selectedRole === 'super_admin' ? 'master123' : selectedRole === 'administrador' ? 'admin123' : 'barber123');
+                  setError(null);
+                }}
+                className="font-bold text-[#D4AF37] hover:underline bg-[#D4AF37]/10 px-1.5 py-0.5 rounded cursor-pointer"
+                title="Clique para preencher"
+              >
+                {selectedRole === 'super_admin' ? 'master123' : selectedRole === 'administrador' ? 'admin123' : 'barber123'}
+              </button>
+              {' '}(ou <strong>1234</strong>)
             </p>
           </div>
 

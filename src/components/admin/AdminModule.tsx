@@ -223,6 +223,32 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
     onRefreshData();
   };
 
+  // Delete Barber permanently
+  const handleDeleteBarber = async (barb: Barbeiro) => {
+    if (!window.confirm(`Tem certeza que deseja excluir permanentemente o barbeiro ${barb.nome}?`)) {
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'barbeiros', barb.id));
+      onRefreshData();
+    } catch (err) {
+      console.error('Erro ao excluir barbeiro:', err);
+    }
+  };
+
+  // Delete Service permanently
+  const handleDeleteService = async (service: Servico) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o serviço ${service.nome}?`)) {
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'servicos', service.id));
+      onRefreshData();
+    } catch (err) {
+      console.error('Erro ao excluir serviço:', err);
+    }
+  };
+
   // Broadcast push notification to all users
   const handleBroadcastPush = async () => {
     await sendNotification('all', broadcastTitle, broadcastMsg, 'sistema');
@@ -234,14 +260,14 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
   const [purgeFeedback, setPurgeFeedback] = useState<string | null>(null);
 
   const handlePurgeAllTestRecords = async () => {
-    if (!window.confirm('Deseja limpar todos os agendamentos e registros de teste? Os agendamentos do sistema serão zerados para você iniciar suas operações reais.')) {
+    if (!window.confirm('Deseja limpar todos os agendamentos, barbeiros e registros de teste? O sistema ficará 100% zerado e limpo para você operar.')) {
       return;
     }
     try {
       setIsPurging(true);
-      await purgeAllTestData();
+      await purgeAllTestData(true);
       onRefreshData();
-      setPurgeFeedback('Agendamentos de teste apagados com sucesso! O sistema está zerado e pronto.');
+      setPurgeFeedback('Dados de teste apagados com sucesso! O sistema está zerado e pronto.');
       setTimeout(() => setPurgeFeedback(null), 4000);
     } catch (err) {
       console.error('Erro ao purgar dados:', err);
@@ -255,6 +281,8 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
     if (statusFilter !== 'todos' && ag.status !== statusFilter) return false;
     return true;
   });
+
+  const primaryBarber = barbeiros[0] || null;
 
   return (
     <div className="flex flex-col min-h-[620px] bg-[#121212] text-zinc-100 pb-16">
@@ -278,17 +306,17 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
             </div>
           </div>
 
-          {/* Alternar para modo Barbeiro em mobile */}
-          {onSwitchToBarber && (
+          {/* Alternar para modo Barbeiro em mobile (se houver barbeiro cadastrado) */}
+          {onSwitchToBarber && primaryBarber && (
             <div className="lg:hidden">
               <button
                 type="button"
-                onClick={() => onSwitchToBarber('barb-carlos')}
+                onClick={() => onSwitchToBarber(primaryBarber.id)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/35 hover:bg-[#D4AF37]/25 text-xs font-bold transition-all shadow-sm whitespace-nowrap"
-                title="Alternar para Minha Agenda de Barbeiro (Carlos Silva)"
+                title={`Alternar para Minha Agenda de Barbeiro (${primaryBarber.nome})`}
               >
                 <Scissors className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span className="hidden sm:inline">Modo Barbeiro (Carlos)</span>
+                <span className="hidden sm:inline">Modo Barbeiro ({primaryBarber.nome})</span>
                 <span className="sm:hidden">Barbeiro</span>
               </button>
             </div>
@@ -303,7 +331,7 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
             disabled={isPurging}
             onClick={handlePurgeAllTestRecords}
             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all shadow-sm whitespace-nowrap shrink-0 disabled:opacity-50"
-            title="Apagar agendamentos de teste do banco de dados"
+            title="Apagar dados e registros de teste do banco de dados"
           >
             <Trash2 className="w-3.5 h-3.5 text-rose-400" />
             <span className="hidden sm:inline">{isPurging ? 'Limpando...' : 'Zerar Testes'}</span>
@@ -324,16 +352,16 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
             </button>
           )}
 
-          {/* Alternar para modo Barbeiro em telas maiores */}
-          {onSwitchToBarber && (
+          {/* Alternar para modo Barbeiro em telas maiores (se houver barbeiro cadastrado) */}
+          {onSwitchToBarber && primaryBarber && (
             <button
               type="button"
-              onClick={() => onSwitchToBarber('barb-carlos')}
+              onClick={() => onSwitchToBarber(primaryBarber.id)}
               className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/35 hover:bg-[#D4AF37]/25 text-xs font-bold transition-all shadow-sm whitespace-nowrap shrink-0"
-              title="Alternar para Minha Agenda de Barbeiro (Carlos Silva)"
+              title={`Alternar para Minha Agenda de Barbeiro (${primaryBarber.nome})`}
             >
               <Scissors className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>Modo Barbeiro (Carlos)</span>
+              <span>Modo Barbeiro ({primaryBarber.nome})</span>
             </button>
           )}
 
@@ -539,115 +567,145 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
 
           {/* Barbers list as in mockup */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {barbeiros.map((barb) => {
-              const isActive = barb.status === 'ativo';
-              return (
-                <div
-                  key={barb.id}
-                  className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 flex flex-col justify-between space-y-3.5 hover:border-zinc-700 transition-all shadow-md"
+            {barbeiros.length === 0 ? (
+              <div className="col-span-full p-8 rounded-2xl bg-[#18181b] border border-zinc-800 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 text-[#D4AF37] flex items-center justify-center mx-auto">
+                  <Scissors className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-zinc-100 font-display">Nenhum barbeiro cadastrado</h4>
+                <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                  O sistema está limpo sem barbeiros de teste. Cadastre os barbeiros reais da sua equipe para iniciar o atendimento.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowBarberModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D4AF37] text-zinc-950 font-bold text-xs hover:brightness-110 transition-all shadow-sm"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={barb.foto}
-                        alt={barb.nome}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-zinc-700 shrink-0"
-                      />
-                      <div>
-                        <h4 className="text-xs font-bold text-zinc-100">{barb.nome}</h4>
-                        <p className="text-[11px] text-[#C5A059]">{barb.especialidade}</p>
-                        <p className="text-[10px] text-zinc-500">{barb.telefone}</p>
+                  <Plus className="w-4 h-4" />
+                  <span>Cadastrar Primeiro Barbeiro</span>
+                </button>
+              </div>
+            ) : (
+              barbeiros.map((barb) => {
+                const isActive = barb.status === 'ativo';
+                return (
+                  <div
+                    key={barb.id}
+                    className="p-4 rounded-xl bg-[#18181b] border border-zinc-800 flex flex-col justify-between space-y-3.5 hover:border-zinc-700 transition-all shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={barb.foto}
+                          alt={barb.nome}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-zinc-700 shrink-0"
+                        />
+                        <div>
+                          <h4 className="text-xs font-bold text-zinc-100">{barb.nome}</h4>
+                          <p className="text-[11px] text-[#C5A059]">{barb.especialidade}</p>
+                          <p className="text-[10px] text-zinc-500">{barb.telefone}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleBarberStatus(barb)}
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
+                            isActive
+                              ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
+                              : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
+                          }`}
+                        >
+                          {barb.status}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBarber(barb)}
+                          className="p-1 rounded-lg hover:bg-rose-500/20 text-zinc-500 hover:text-rose-400 transition-colors"
+                          title={`Excluir ${barb.nome}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleToggleBarberStatus(barb)}
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
-                        isActive
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
-                          : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
-                      }`}
-                    >
-                      {barb.status}
-                    </button>
-                  </div>
+                    {/* Informação de Acesso e PIN do Barbeiro */}
+                    <div className="p-2.5 rounded-lg bg-zinc-900/90 border border-zinc-800 space-y-1 text-xs">
+                      <div className="flex items-center justify-between text-zinc-400">
+                        <span className="flex items-center gap-1.5 text-[11px]">
+                          <Key className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          <span>PIN do Barbeiro:</span>
+                        </span>
+                        <code className="px-1.5 py-0.5 rounded bg-zinc-950 text-amber-300 font-mono text-[11px]">
+                          {barb.pin || 'barber123'}
+                        </code>
+                      </div>
+                    </div>
 
-                  {/* Informação de Acesso e PIN do Barbeiro */}
-                  <div className="p-2.5 rounded-lg bg-zinc-900/90 border border-zinc-800 space-y-1 text-xs">
-                    <div className="flex items-center justify-between text-zinc-400">
-                      <span className="flex items-center gap-1.5 text-[11px]">
-                        <Key className="w-3.5 h-3.5 text-[#D4AF37]" />
-                        <span>PIN do Barbeiro:</span>
+                    {/* 1. AÇÕES EXCLUSIVAS: Link de Acesso do Barbeiro à Agenda */}
+                    <div className="space-y-1.5 pt-1 border-t border-zinc-800/80">
+                      <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">
+                        Acesso deste Barbeiro à Agenda:
                       </span>
-                      <code className="px-1.5 py-0.5 rounded bg-zinc-950 text-amber-300 font-mono text-[11px]">
-                        {barb.pin || 'barber123'}
-                      </code>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyBarberAccess(barb)}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 text-[11px] font-semibold transition-all"
+                          title="Copiar link exclusivo para o barbeiro acessar a agenda"
+                        >
+                          {copiedBarberAccessId === barb.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span className="text-emerald-400 font-bold">Copiado!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 text-[#D4AF37]" />
+                              <span>Copiar Acesso</span>
+                            </>
+                          )}
+                        </button>
 
-                  {/* 1. AÇÕES EXCLUSIVAS: Link de Acesso do Barbeiro à Agenda */}
-                  <div className="space-y-1.5 pt-1 border-t border-zinc-800/80">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">
-                      Acesso deste Barbeiro à Agenda:
-                    </span>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleCopyBarberAccess(barb)}
-                        className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 text-[11px] font-semibold transition-all"
-                        title="Copiar link exclusivo para o barbeiro acessar a agenda"
-                      >
-                        {copiedBarberAccessId === barb.id ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-emerald-400 font-bold">Copiado!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5 text-[#D4AF37]" />
-                            <span>Copiar Acesso</span>
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSendBarberWhatsApp(barb)}
-                        className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-600/50 text-[11px] font-semibold transition-all"
-                        title="Enviar link de acesso direto para o WhatsApp do barbeiro"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5 fill-white" />
-                        <span>WhatsApp</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 2. Divulgação para Clientes & Abertura Direta */}
-                  <div className="flex items-center gap-2 pt-1 border-t border-zinc-800/60">
-                    <div className="flex-1">
-                      <CopyBarberLinkButton
-                        barberId={barb.id}
-                        barberSlug={barb.slug}
-                        barberName={barb.nome}
-                        className="text-[11px] w-full"
-                      />
+                        <button
+                          type="button"
+                          onClick={() => handleSendBarberWhatsApp(barb)}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-600/50 text-[11px] font-semibold transition-all"
+                          title="Enviar link de acesso direto para o WhatsApp do barbeiro"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                          <span>WhatsApp</span>
+                        </button>
+                      </div>
                     </div>
 
-                    {onSwitchToBarber && (
-                      <button
-                        type="button"
-                        onClick={() => onSwitchToBarber(barb.id)}
-                        className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-all shrink-0"
-                        title="Abrir agenda deste barbeiro no painel"
-                      >
-                        Abrir Agenda
-                      </button>
-                    )}
+                    {/* 2. Divulgação para Clientes & Abertura Direta */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-zinc-800/60">
+                      <div className="flex-1">
+                        <CopyBarberLinkButton
+                          barberId={barb.id}
+                          barberSlug={barb.slug}
+                          barberName={barb.nome}
+                          className="text-[11px] w-full"
+                        />
+                      </div>
+
+                      {onSwitchToBarber && (
+                        <button
+                          type="button"
+                          onClick={() => onSwitchToBarber(barb.id)}
+                          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-all shrink-0"
+                          title="Abrir agenda deste barbeiro no painel"
+                        >
+                          Abrir Agenda
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}
@@ -672,43 +730,74 @@ export const AdminModule: React.FC<AdminModuleProps> = ({
             </button>
           </div>
 
-          {/* Service list with active toggles as in mockup */}
+          {/* Service list with active toggles and delete */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {servicos.map((serv) => {
-              const isActive = serv.status === 'ativo';
-              return (
-                <div
-                  key={serv.id}
-                  className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 flex items-center justify-between"
+            {servicos.length === 0 ? (
+              <div className="col-span-full p-8 rounded-2xl bg-[#18181b] border border-zinc-800 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 text-[#D4AF37] flex items-center justify-center mx-auto">
+                  <Scissors className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-zinc-100 font-display">Nenhum serviço cadastrado</h4>
+                <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                  O catálogo de serviços está limpo sem dados de teste. Cadastre os serviços reais oferecidos pela barbearia.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowServiceModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D4AF37] text-zinc-950 font-bold text-xs hover:brightness-110 transition-all shadow-sm"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#D4AF37]">
-                      <Scissors className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
+                  <span>Cadastrar Primeiro Serviço</span>
+                </button>
+              </div>
+            ) : (
+              servicos.map((serv) => {
+                const isActive = serv.status === 'ativo';
+                return (
+                  <div
+                    key={serv.id}
+                    className="p-3.5 rounded-xl bg-[#18181b] border border-zinc-800 flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#D4AF37] shrink-0">
+                        <Scissors className="w-5 h-5" />
+                      </div>
+                      <div className="truncate">
+                        <h4 className="text-xs font-bold text-zinc-100 truncate">{serv.nome}</h4>
+                        <p className="text-[11px] text-zinc-400">
+                          R$ {serv.preco.toFixed(2).replace('.', ',')} • {serv.duracaoMinutos} min
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-zinc-100">{serv.nome}</h4>
-                      <p className="text-[11px] text-zinc-400">
-                        R$ {serv.preco.toFixed(2).replace('.', ',')} • {serv.duracaoMinutos} min
-                      </p>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleServiceStatus(serv)}
+                        className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
+                          isActive ? 'bg-emerald-500' : 'bg-zinc-700'
+                        }`}
+                        title={isActive ? 'Desativar serviço' : 'Ativar serviço'}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                            isActive ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteService(serv)}
+                        className="p-1 rounded-lg hover:bg-rose-500/20 text-zinc-500 hover:text-rose-400 transition-colors"
+                        title={`Excluir serviço ${serv.nome}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleToggleServiceStatus(serv)}
-                    className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
-                      isActive ? 'bg-emerald-500' : 'bg-zinc-700'
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                        isActive ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}
